@@ -3118,6 +3118,81 @@ void BlockBrakeSetLinkedBrakesClosed(const CoordsXYZ& vehicleTrackLocation, Trac
         }
     } while (trackBeginEnd.begin_element->AsTrack()->GetTrackType() == TrackElemType::Brakes);
 }
+void BrakeLinkToBlockBrake(const CoordsXYZ& vehicleTrackLocation, TrackElement& brake)
+{
+    CoordsXYE output = CoordsXYE(vehicleTrackLocation.x, vehicleTrackLocation.y, reinterpret_cast<TileElement*>(&brake));
+    int32_t outputZ = vehicleTrackLocation.z;
+    do
+    {
+        if (output.element->AsTrack()->GetTrackType() == TrackElemType::BlockBrakes)
+        {
+            brake.SetBrakeClosed(
+                (brake.GetBrakeBoosterSpeed() >= output.element->AsTrack()->GetBrakeBoosterSpeed())
+                || (output.element->AsTrack()->GetBrakeClosed()));
+            break;
+        }
+        else if (output.element->AsTrack()->GetTrackType() == TrackElemType::Brakes)
+        {
+            continue;
+        }
+        else
+        {
+            brake.SetBrakeClosed(true);
+            break;
+        }
+    } while (track_block_get_next(&output, &output, &outputZ, nullptr));
+}
+
+void BlockBrakeSetLinkedBrakesClosed(const CoordsXYZ& vehicleTrackLocation, TrackElement& trackElement, bool isClosed)
+{
+    uint8_t brakeSpeed = trackElement.GetBrakeBoosterSpeed();
+
+    auto tileElement = reinterpret_cast<TileElement*>(&trackElement);
+    auto location = vehicleTrackLocation;
+    track_begin_end trackBeginEnd, slowTrackBeginEnd;
+    TileElement slowTileElement = *tileElement;
+    bool counter = true;
+    CoordsXY slowLocation = location;
+    do
+    {
+        if (!track_block_get_previous({ location, tileElement }, &trackBeginEnd))
+        {
+            return;
+        }
+        if (trackBeginEnd.begin_x == vehicleTrackLocation.x && trackBeginEnd.begin_y == vehicleTrackLocation.y
+            && tileElement == trackBeginEnd.begin_element)
+        {
+            return;
+        }
+
+        location.x = trackBeginEnd.end_x;
+        location.y = trackBeginEnd.end_y;
+        location.z = trackBeginEnd.begin_z;
+        tileElement = trackBeginEnd.begin_element;
+
+        if (trackBeginEnd.begin_element->AsTrack()->GetTrackType() == TrackElemType::Brakes)
+        {
+            trackBeginEnd.begin_element->AsTrack()->SetBrakeClosed(
+                (trackBeginEnd.begin_element->AsTrack()->GetBrakeBoosterSpeed() >= brakeSpeed) || isClosed);
+        }
+
+        // prevent infinite loop
+        counter = !counter;
+        if (counter)
+        {
+            track_block_get_previous({ slowLocation, &slowTileElement }, &slowTrackBeginEnd);
+            slowLocation.x = slowTrackBeginEnd.end_x;
+            slowLocation.y = slowTrackBeginEnd.end_y;
+            slowTileElement = *(slowTrackBeginEnd.begin_element);
+            if (slowLocation == location && slowTileElement.GetBaseZ() == tileElement->GetBaseZ()
+                && slowTileElement.GetType() == tileElement->GetType()
+                && slowTileElement.GetDirection() == tileElement->GetDirection())
+            {
+                return;
+            }
+        }
+    } while (trackBeginEnd.begin_element->AsTrack()->GetTrackType() == TrackElemType::Brakes);
+}
 
 /**
  *
