@@ -924,7 +924,7 @@ namespace OpenRCT2::TileInspector
 
         if (isExecuting)
         {
-            trackElement->AsTrack()->SetBlockBrakeClosed(blockBrake);
+            trackElement->AsTrack()->SetBrakeClosed(blockBrake);
 
             MapInvalidateTileFull(loc);
 

@@ -162,6 +162,10 @@ namespace OpenRCT2
             {
                 UpdateTrackElementsRideType();
             }
+            if (os.GetHeader().TargetVersion < 17)
+            {
+                UpdateBrakesClosedState();
+            }
 
             // Initial cash will eventually be removed
             gInitialCash = gCash;
@@ -1071,6 +1075,31 @@ namespace OpenRCT2
             }
         }
 
+        void UpdateBrakesClosedState()
+        {
+            for (int32_t y = 0; y < MAXIMUM_MAP_SIZE_TECHNICAL; y++)
+            {
+                for (int32_t x = 0; x < MAXIMUM_MAP_SIZE_TECHNICAL; x++)
+                {
+                    TileElement* tileElement = MapGetFirstElementAt(TileCoordsXY{ x, y });
+                    if (tileElement == nullptr)
+                        continue;
+                    do
+                    {
+                        if (tileElement->GetType() != TileElementType::Track)
+                            continue;
+
+                        if (tileElement->AsTrack()->GetTrackType() == TrackElemType::BlockBrakes)
+                            tileElement->AsTrack()->SetBrakeBoosterSpeed(RCT2DefaultBlockBrakeSpeed);
+
+                        if (tileElement->AsTrack()->GetTrackType() == TrackElemType::Brakes)
+                            tileElement->AsTrack()->SetBrakeClosed(true);
+
+                    } while (!(tileElement++)->IsLastForTile());
+                }
+            }
+        }
+
         void ReadWriteBannersChunk(OrcaStream& os)
         {
             os.ReadWriteChunk(ParkFileChunkType::BANNERS, [&os](OrcaStream::ChunkStream& cs) {
@@ -1921,7 +1950,18 @@ namespace OpenRCT2
         cs.ReadWrite(entity.scream_sound_id);
         cs.ReadWrite(entity.TrackSubposition);
         cs.ReadWrite(entity.NumLaps);
-        cs.ReadWrite(entity.brake_speed);
+        if (cs.GetMode() == OrcaStream::Mode::READING && os.GetHeader().TargetVersion < 17)
+        {
+            uint8_t brakeSpeed;
+            cs.ReadWrite(brakeSpeed);
+            if (entity.GetTrackType() == TrackElemType::BlockBrakes)
+                brakeSpeed = RCT2DefaultBlockBrakeSpeed;
+            entity.brake_speed = brakeSpeed;
+        }
+        else
+        {
+            cs.ReadWrite(entity.brake_speed);
+        }
         cs.ReadWrite(entity.lost_time_out);
         cs.ReadWrite(entity.vertical_drop_countdown);
         cs.ReadWrite(entity.var_D3);

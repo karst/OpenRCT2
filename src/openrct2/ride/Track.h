@@ -18,7 +18,9 @@
 
 constexpr const uint32_t RideConstructionSpecialPieceSelected = 0x10000;
 
-constexpr const int32_t BLOCK_BRAKE_BASE_SPEED = 0x20364;
+constexpr const uint8_t RCT2DefaultBlockBrakeSpeed = 2;
+constexpr const int32_t BlockBrakeBaseSpeed = 0x20364;
+constexpr const int32_t BlockBrakeSpeedOffset = BlockBrakeBaseSpeed - (RCT2DefaultBlockBrakeSpeed << 16);
 
 using track_type_t = uint16_t;
 using roll_type_t = uint8_t;
@@ -94,7 +96,7 @@ enum
     TRACK_ELEMENT_FLAGS2_CABLE_LIFT = 1 << 2,
     TRACK_ELEMENT_FLAGS2_HIGHLIGHT = 1 << 3,
     TRACK_ELEMENT_FLAGS2_HAS_GREEN_LIGHT = 1 << 4,
-    TRACK_ELEMENT_FLAGS2_BLOCK_BRAKE_CLOSED = 1 << 5,
+    TRACK_ELEMENT_FLAGS2_BRAKE_CLOSED = 1 << 5,
     TRACK_ELEMENT_FLAGS2_INDESTRUCTIBLE_TRACK_PIECE = 1 << 6,
 };
 

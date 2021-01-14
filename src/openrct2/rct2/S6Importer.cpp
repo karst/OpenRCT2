@@ -1414,13 +1414,21 @@ namespace RCT2
                     dst2->SetInverted(src2->IsInverted());
                     dst2->SetStationIndex(StationIndex::FromUnderlying(src2->GetStationIndex()));
                     dst2->SetHasGreenLight(src2->HasGreenLight());
-                    dst2->SetBlockBrakeClosed(src2->BlockBrakeClosed());
+                    dst2->SetBrakeClosed(src2->BlockBrakeClosed());
                     dst2->SetIsIndestructible(src2->IsIndestructible());
                     // Skipping IsHighlighted()
 
-                    if (TrackTypeHasSpeedSetting(trackType))
+                    // Import block brakes to keep legacy behaviour
+                    if (trackType == TrackElemType::BlockBrakes)
+                    {
+                        dst2->SetBrakeBoosterSpeed(RCT2DefaultBlockBrakeSpeed);
+                    }
+                    else if (TrackTypeHasSpeedSetting(trackType))
                     {
                         dst2->SetBrakeBoosterSpeed(src2->GetBrakeBoosterSpeed());
+                        // Brakes import as closed to preserve legacy behaviour
+                        if (trackType == TrackElemType::Brakes)
+                            dst2->SetBrakeClosed(true);
                     }
                     else if (trackType == TrackElemType::OnRidePhoto)
                     {
@@ -1979,6 +1987,10 @@ namespace RCT2
 
                 if (tileElement2 != nullptr)
                     dst->SetTrackType(TrackElemType::RotationControlToggle);
+            }
+            else if (src->GetTrackType() == TrackElemType::BlockBrakes)
+            {
+                dst->brake_speed = RCT2DefaultBlockBrakeSpeed;
             }
         }
         else

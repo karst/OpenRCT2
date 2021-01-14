@@ -1680,6 +1680,9 @@ namespace RCT1
                     if (TrackTypeHasSpeedSetting(trackType))
                     {
                         dst2->SetBrakeBoosterSpeed(src2->GetBrakeBoosterSpeed());
+                        // Brakes import as closed to preserve legacy behaviour
+                        if (trackType == TrackElemType::Brakes)
+                            dst2->SetBrakeClosed(true);
                     }
                     else if (trackType == TrackElemType::OnRidePhoto)
                     {

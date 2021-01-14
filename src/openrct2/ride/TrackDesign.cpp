@@ -180,6 +180,8 @@ ResultWithMessage TrackDesign::CreateTrackDesignTrack(TrackDesignState& tds, con
         return { false, STR_TRACK_TOO_LARGE_OR_TOO_MUCH_SCENERY };
     }
 
+    StringId warningMessage = STR_NONE;
+
     ride_get_start_of_track(&trackElement);
 
     int32_t z = trackElement.element->GetBaseZ();
@@ -220,13 +222,21 @@ ResultWithMessage TrackDesign::CreateTrackDesignTrack(TrackDesignState& tds, con
         track.type = trackElement.element->AsTrack()->GetTrackType();
 
         uint8_t trackFlags;
-        if (TrackTypeHasSpeedSetting(track.type))
+        // This if-else block only applies to td6. New track design format will always encode speed and seat rotation.
+        if (TrackTypeHasSpeedSetting(track.type) && track.type != TrackElemType::BlockBrakes)
         {
             trackFlags = trackElement.element->AsTrack()->GetBrakeBoosterSpeed() >> 1;
         }
         else
         {
             trackFlags = trackElement.element->AsTrack()->GetSeatRotation();
+        }
+
+        // This warning will not apply to new track design format
+        if (track.type == TrackElemType::BlockBrakes
+            && trackElement.element->AsTrack()->GetBrakeBoosterSpeed() != RCT2DefaultBlockBrakeSpeed)
+        {
+            warningMessage = STR_TRACK_DESIGN_BLOCK_BRAKE_SPEED_RESET;
         }
 
         if (trackElement.element->AsTrack()->HasChain())
@@ -347,7 +357,7 @@ ResultWithMessage TrackDesign::CreateTrackDesignTrack(TrackDesignState& tds, con
 
     space_required_x = ((tds.PreviewMax.x - tds.PreviewMin.x) / 32) + 1;
     space_required_y = ((tds.PreviewMax.y - tds.PreviewMin.y) / 32) + 1;
-    return { true };
+    return { true, warningMessage };
 }
 
 ResultWithMessage TrackDesign::CreateTrackDesignMaze(TrackDesignState& tds, const Ride& ride)
@@ -1614,7 +1624,17 @@ static GameActions::Result TrackDesignPlaceRide(TrackDesignState& tds, TrackDesi
                 // di
                 int16_t tempZ = newCoords.z - trackCoordinates->z_begin;
                 uint32_t trackColour = (track.flags >> 4) & 0x3;
-                uint32_t brakeSpeed = (track.flags & 0x0F) * 2;
+                uint32_t brakeSpeed;
+                // RCT2-created track designs write brake speed to all tracks; block brake speed must be treated as
+                // garbage data.
+                if (trackType == TrackElemType::BlockBrakes)
+                {
+                    brakeSpeed = RCT2DefaultBlockBrakeSpeed;
+                }
+                else
+                {
+                    brakeSpeed = (track.flags & 0x0F) * 2;
+                }
                 uint32_t seatRotation = track.flags & 0x0F;
 
                 int32_t liftHillAndAlternativeState = 0;
