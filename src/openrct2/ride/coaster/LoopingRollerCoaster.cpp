@@ -24,6 +24,13 @@ static constexpr auto SPR_LOOPING_RC_BOOSTER_NW_SE = 15011;
 static constexpr auto SPR_LOOPING_RC_FLAT_CHAINED_SW_NE = 15016;
 static constexpr auto SPR_LOOPING_RC_FLAT_CHAINED_NW_SE = 15017;
 
+static constexpr const uint32_t LoopingRCDiagBrakeImages[NumOrthogonalDirections] = {
+    SPR_G2_LOOPING_DIAG_BRAKES,
+    SPR_G2_LOOPING_DIAG_BRAKES + 1,
+    SPR_G2_LOOPING_DIAG_BRAKES,
+    SPR_G2_LOOPING_DIAG_BRAKES + 1,
+};
+
 /** rct2: 0x008A6370 */
 static void looping_rc_track_flat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -5479,6 +5486,26 @@ static void looping_rc_track_diag_flat(
     }
 }
 
+void looping_rc_track_diag_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    track_paint_util_diag_tiles_paint(
+        session, 3, height, direction, trackSequence, session.TrackColours[SCHEME_TRACK], LoopingRCDiagBrakeImages,
+        defaultDiagTileOffsets, defaultDiagBoundLengths, nullptr);
+
+    // TODO: draw brake sprite layers
+
+    if (trackSequence == 3)
+    {
+        MetalASupportsPaintSetup(
+            session, METAL_SUPPORTS_TUBES, DiagSupportSegments[direction], 0, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+
+    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+}
+
 /** rct2: 0x008A67C0 */
 static void looping_rc_track_diag_25_deg_up(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -9906,6 +9933,10 @@ TRACK_PAINT_FUNCTION get_track_paint_function_looping_rc(int32_t trackType)
 
         case TrackElemType::Booster:
             return looping_rc_track_booster;
+
+        case TrackElemType::DiagBrakes:
+        case TrackElemType::DiagBlockBrakes:
+            return looping_rc_track_diag_brakes;
     }
     return get_track_paint_function_lim_launched_rc(trackType);
 }

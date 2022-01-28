@@ -199,6 +199,9 @@ enum
     TRACK_FLYING_HALF_LOOP_UNINVERTED_DOWN,
     TRACK_FLYING_HALF_LOOP_INVERTED_UP,
 
+    TRACK_DIAG_BRAKES,
+    TRACK_DIAG_BLOCK_BRAKES,
+
     TRACK_GROUP_COUNT,
 };
 
@@ -577,7 +580,10 @@ namespace TrackElemType
     constexpr track_type_t FlyerHalfLoopInvertedUp = 291;
     constexpr track_type_t FlyerHalfLoopUninvertedDown = 292;
 
-    constexpr track_type_t Count = 293;
+    constexpr track_type_t DiagBrakes = 293;
+    constexpr track_type_t DiagBlockBrakes = 294;
+
+    constexpr track_type_t Count = 295;
     constexpr track_type_t None = 65535;
 
 }; // namespace TrackElemType
@@ -626,6 +632,11 @@ void track_get_front(const CoordsXYE& input, CoordsXYE* output);
 
 bool track_element_is_covered(track_type_t trackElementType);
 bool track_type_is_station(track_type_t trackType);
+bool TrackTypeIsBrakes(track_type_t trackType);
+bool TrackTypeIsBlockBrakes(track_type_t trackType);
+
+std::optional<CoordsXYZ> GetTrackElementOriginAndApplyChanges(
+    const CoordsXYZD& location, track_type_t type, uint16_t extra_params, TileElement** output_element, uint16_t flags);
 
 roll_type_t track_get_actual_bank(TileElement* tileElement, roll_type_t bank);
 roll_type_t track_get_actual_bank_2(int32_t rideType, bool isInverted, roll_type_t bank);

@@ -18,6 +18,28 @@
 #include "../TrackData.h"
 #include "../TrackPaint.h"
 
+static constexpr const uint32_t CompactInvertedDiagBrakeImages[NumOrthogonalDirections] = {
+    SPR_G2_SLC_DIAG_BRAKES,
+    SPR_G2_SLC_DIAG_BRAKES + 1,
+    SPR_G2_SLC_DIAG_BRAKES,
+    SPR_G2_SLC_DIAG_BRAKES + 1,
+};
+
+static constexpr const uint32_t CompactInvertedDiagBlockBrakeImages[2][NumOrthogonalDirections] = {
+    {
+        SPR_G2_SLC_DIAG_BRAKES,
+        SPR_G2_SLC_DIAG_BRAKES + 1,
+        SPR_G2_SLC_DIAG_BRAKES,
+        SPR_G2_SLC_DIAG_BRAKES + 1,
+    },
+    {
+        SPR_G2_SLC_DIAG_BRAKES,
+        SPR_G2_SLC_DIAG_BRAKES + 2,
+        SPR_G2_SLC_DIAG_BRAKES,
+        SPR_G2_SLC_DIAG_BRAKES + 2,
+    },
+};
+
 /** rct2: 0x008AE6E0 */
 static void compact_inverted_rc_track_flat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -6352,6 +6374,47 @@ static void compact_inverted_rc_track_diag_flat(
     }
 }
 
+static void compact_inverted_rc_track_diag_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    track_paint_util_diag_tiles_paint(
+        session, 3, height + 29, direction, trackSequence, session.TrackColours[SCHEME_TRACK], CompactInvertedDiagBrakeImages,
+        defaultDiagTileOffsets, defaultDiagBoundLengths, nullptr);
+
+    int32_t blockedSegments = DiagBlockedSegments[trackSequence];
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments, direction), 0xFFFF, 0);
+
+    if (trackSequence == 3)
+    {
+        MetalASupportsPaintSetup(
+            session, METAL_SUPPORTS_TUBES_INVERTED, DiagSupportSegments[direction], 0, height + 38,
+            session.TrackColours[SCHEME_SUPPORTS]);
+    }
+    PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+}
+
+static void compact_inverted_rc_track_diag_block_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    track_paint_util_diag_tiles_paint(
+        session, 3, height + 29, direction, trackSequence, session.TrackColours[SCHEME_TRACK],
+        CompactInvertedDiagBlockBrakeImages[trackElement.GetBrakeClosed()], defaultDiagTileOffsets, defaultDiagBoundLengths,
+        nullptr);
+
+    int32_t blockedSegments = DiagBlockedSegments[trackSequence];
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments, direction), 0xFFFF, 0);
+
+    if (trackSequence == 3)
+    {
+        MetalASupportsPaintSetup(
+            session, METAL_SUPPORTS_TUBES_INVERTED, DiagSupportSegments[direction], 0, height + 38,
+            session.TrackColours[SCHEME_SUPPORTS]);
+    }
+    PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+}
+
 /** rct2: 0x008AEBB0 */
 static void compact_inverted_rc_track_diag_25_deg_up(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -9102,6 +9165,10 @@ TRACK_PAINT_FUNCTION get_track_paint_function_compact_inverted_rc(int32_t trackT
             return compact_inverted_rc_track_diag_right_bank;
         case TrackElemType::BlockBrakes:
             return compact_inverted_rc_track_block_brakes;
+        case TrackElemType::DiagBrakes:
+            return compact_inverted_rc_track_diag_brakes;
+        case TrackElemType::DiagBlockBrakes:
+            return compact_inverted_rc_track_diag_block_brakes;
     }
     return nullptr;
 }

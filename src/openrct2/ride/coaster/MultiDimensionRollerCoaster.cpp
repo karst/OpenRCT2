@@ -33,6 +33,52 @@ static constexpr const uint32_t MULTI_DIM_INVERTED_BLOCK_BRAKE_NW_SE_OPEN = 2655
 static constexpr const uint32_t MULTI_DIM_INVERTED_BLOCK_BRAKE_SW_NE_CLOSED = 26553;
 static constexpr const uint32_t MULTI_DIM_INVERTED_BLOCK_BRAKE_NW_SE_CLOSED = 26554;
 
+static constexpr const uint32_t MultidimDiagBrakeImages[2][NumOrthogonalDirections] = {
+    {
+        SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES,
+        SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 1,
+        SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES,
+        SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 1,
+    },
+    {
+        SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES,
+        SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 1,
+        SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES,
+        SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 1,
+    },
+};
+
+static constexpr const uint32_t MultidimDiagBlockBrakeImages[2][2][NumOrthogonalDirections] = {
+    {
+        {
+            SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 3,
+            SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 5,
+            SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 3,
+            SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 5,
+        },
+        {
+            SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 2,
+            SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 4,
+            SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 2,
+            SPR_G2_MULTIDIM_UPRIGHT_DIAG_BRAKES + 4,
+        },
+    },
+    {
+        {
+            SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 2,
+            SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 4,
+            SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 2,
+            SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 4,
+        },
+        {
+            SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 2,
+            SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 3,
+            SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 2,
+            SPR_G2_MULTIDIM_INVERTED_DIAG_BRAKES + 3,
+        },
+    },
+};
+
 /** rct2: 0x00792D88 */
 static void multi_dimension_rc_track_flat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -7042,6 +7088,86 @@ static void multi_dimension_rc_track_diag_flat(
     }
 }
 
+void multi_dimension_rc_track_diag_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    int32_t blockedSegments = DiagBlockedSegments[trackSequence];
+    if (trackElement.IsInverted())
+    {
+        track_paint_util_diag_tiles_paint(
+            session, -3, height + 24, direction, trackSequence, session.TrackColours[SCHEME_TRACK], MultidimDiagBrakeImages[1],
+            defaultDiagTileOffsets, defaultDiagBoundLengths, nullptr);
+
+        PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments, direction), 0xFFFF, 0);
+        PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+
+        if (trackSequence == 3)
+        {
+            MetalASupportsPaintSetup(
+                session, METAL_SUPPORTS_TUBES_INVERTED, DiagSupportSegments[direction], 0, height + 36,
+                session.TrackColours[SCHEME_SUPPORTS]);
+        }
+    }
+    else
+    {
+        track_paint_util_diag_tiles_paint(
+            session, 3, height, direction, trackSequence, session.TrackColours[SCHEME_TRACK], MultidimDiagBrakeImages[0],
+            defaultDiagTileOffsets, defaultDiagBoundLengths, nullptr);
+
+        if (trackSequence == 3)
+        {
+            MetalASupportsPaintSetup(
+                session, METAL_SUPPORTS_TUBES_INVERTED, DiagSupportSegments[direction], 0, height,
+                session.TrackColours[SCHEME_SUPPORTS]);
+        }
+
+        PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments, direction), 0xFFFF, 0);
+        PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    }
+}
+
+void multi_dimension_rc_track_diag_block_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    int32_t blockedSegments = DiagBlockedSegments[trackSequence];
+    if (trackElement.IsInverted())
+    {
+        track_paint_util_diag_tiles_paint(
+            session, -3, height + 24, direction, trackSequence, session.TrackColours[SCHEME_TRACK],
+            MultidimDiagBlockBrakeImages[1][trackElement.GetBrakeClosed()], defaultDiagTileOffsets, defaultDiagBoundLengths,
+            nullptr);
+
+        PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments, direction), 0xFFFF, 0);
+        PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+
+        if (trackSequence == 3)
+        {
+            MetalASupportsPaintSetup(
+                session, METAL_SUPPORTS_TUBES_INVERTED, DiagSupportSegments[direction], 0, height + 36,
+                session.TrackColours[SCHEME_SUPPORTS]);
+        }
+    }
+    else
+    {
+        track_paint_util_diag_tiles_paint(
+            session, 3, height, direction, trackSequence, session.TrackColours[SCHEME_TRACK],
+            MultidimDiagBlockBrakeImages[0][trackElement.GetBrakeClosed()], defaultDiagTileOffsets, defaultDiagBoundLengths,
+            nullptr);
+
+        if (trackSequence == 3)
+        {
+            MetalASupportsPaintSetup(
+                session, METAL_SUPPORTS_TUBES_INVERTED, DiagSupportSegments[direction], 0, height,
+                session.TrackColours[SCHEME_SUPPORTS]);
+        }
+
+        PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments, direction), 0xFFFF, 0);
+        PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    }
+}
+
 /** rct2: 0x00793158 */
 static void multi_dimension_rc_track_diag_25_deg_up(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -13278,6 +13404,11 @@ TRACK_PAINT_FUNCTION get_track_paint_function_multi_dimension_rc(int32_t trackTy
             return multi_dimension_rc_track_multidim_flat_to_90_deg_down_quarter_loop;
         case TrackElemType::MultiDimInvertedUp90ToFlatQuarterLoop:
             return multi_dimension_rc_track_multidim_inverted_90_deg_up_to_flat_quarter_loop;
+
+        case TrackElemType::DiagBrakes:
+            return multi_dimension_rc_track_diag_brakes;
+        case TrackElemType::DiagBlockBrakes:
+            return multi_dimension_rc_track_diag_block_brakes;
     }
     return nullptr;
 }

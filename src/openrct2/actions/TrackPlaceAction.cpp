@@ -540,7 +540,10 @@ GameActions::Result TrackPlaceAction::Execute() const
                     ride->CableLiftLoc = mapLoc;
                     break;
                 case TrackElemType::BlockBrakes:
+                case TrackElemType::DiagBlockBrakes:
                 {
+                    if (trackBlock->index != 0)
+                        break;
                     ride->num_block_brakes++;
                     ride->window_invalidate_flags |= RIDE_INVALIDATE_RIDE_OPERATING;
 
@@ -626,6 +629,7 @@ GameActions::Result TrackPlaceAction::Execute() const
                 MapAnimationCreate(MAP_ANIMATION_TYPE_TRACK_SPINNINGTUNNEL, CoordsXYZ{ mapLoc, trackElement->GetBaseZ() });
                 break;
             case TrackElemType::Brakes:
+            case TrackElemType::DiagBrakes:
                 trackElement->SetBrakeClosed(true);
                 break;
         }

@@ -30,6 +30,27 @@ static constexpr const uint32_t _MineTrainBlockBrakeImages[NumOrthogonalDirectio
     { MINE_TRAIN_BLOCK_BRAKE_NW_SE_OPEN, MINE_TRAIN_BLOCK_BRAKE_NW_SE_CLOSED },
 };
 
+static constexpr const uint32_t MinetrainRCDiagBrakeImages[NumOrthogonalDirections] = {
+    SPR_G2_MINETRAIN_DIAG_BRAKES,
+    SPR_G2_MINETRAIN_DIAG_BRAKES + 1,
+    SPR_G2_MINETRAIN_DIAG_BRAKES,
+    SPR_G2_MINETRAIN_DIAG_BRAKES + 1,
+};
+
+static constexpr const uint32_t MinetrainRCDiagBlockBrakeImages[2][NumOrthogonalDirections] = {
+    {
+        SPR_G2_MINETRAIN_DIAG_BRAKES + 3,
+        SPR_G2_MINETRAIN_DIAG_BRAKES + 5,
+        SPR_G2_MINETRAIN_DIAG_BRAKES + 3,
+        SPR_G2_MINETRAIN_DIAG_BRAKES + 5,
+    },
+    {
+        SPR_G2_MINETRAIN_DIAG_BRAKES + 2,
+        SPR_G2_MINETRAIN_DIAG_BRAKES + 4,
+        SPR_G2_MINETRAIN_DIAG_BRAKES + 2,
+        SPR_G2_MINETRAIN_DIAG_BRAKES + 4,
+    },
+};
 /** rct2: 0x0071BFA4 */
 static void mine_train_rc_track_flat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -4984,6 +5005,57 @@ static void mine_train_rc_track_diag_flat(
     }
 }
 
+void mine_train_rc_track_diag_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    track_paint_util_diag_tiles_paint(
+        session, 1, height, direction, trackSequence, session.TrackColours[SCHEME_TRACK], MinetrainRCDiagBrakeImages,
+        defaultDiagTileOffsets, defaultDiagBoundLengths, nullptr);
+
+    if (trackSequence == 1)
+    {
+        int32_t woodenSupportSegments[] = { 8, 9, 10, 11 };
+        WoodenASupportsPaintSetup(
+            session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+    if (trackSequence == 2)
+    {
+        int32_t woodenSupportSegments[] = { 10, 11, 8, 9 };
+        WoodenASupportsPaintSetup(
+            session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+
+    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+}
+
+void mine_train_rc_track_diag_block_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    track_paint_util_diag_tiles_paint(
+        session, 13, height, direction, trackSequence, session.TrackColours[SCHEME_TRACK],
+        MinetrainRCDiagBlockBrakeImages[trackElement.GetBrakeClosed()], defaultDiagTileOffsets, defaultDiagBoundLengths,
+        nullptr);
+
+    if (trackSequence == 1)
+    {
+        int32_t woodenSupportSegments[] = { 8, 9, 10, 11 };
+        WoodenASupportsPaintSetup(
+            session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+    if (trackSequence == 2)
+    {
+        int32_t woodenSupportSegments[] = { 10, 11, 8, 9 };
+        WoodenASupportsPaintSetup(
+            session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+
+    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+}
+
 /** rct2: 0x0071C414 */
 static void mine_train_rc_track_diag_25_deg_up(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -7705,6 +7777,10 @@ TRACK_PAINT_FUNCTION get_track_paint_function_mine_train_rc(int32_t trackType)
             return mine_train_rc_track_diag_right_bank;
         case TrackElemType::BlockBrakes:
             return mine_train_rc_track_block_brakes;
+        case TrackElemType::DiagBrakes:
+            return mine_train_rc_track_diag_brakes;
+        case TrackElemType::DiagBlockBrakes:
+            return mine_train_rc_track_diag_block_brakes;
     }
     return nullptr;
 }

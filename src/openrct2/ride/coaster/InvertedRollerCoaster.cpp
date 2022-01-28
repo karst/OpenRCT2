@@ -18,6 +18,13 @@
 #include "../TrackData.h"
 #include "../TrackPaint.h"
 
+static constexpr const uint32_t InvertedRCDiagBrakeImages[NumOrthogonalDirections] = {
+    SPR_G2_BM_INVERTED_DIAG_BRAKES,
+    SPR_G2_BM_INVERTED_DIAG_BRAKES + 1,
+    SPR_G2_BM_INVERTED_DIAG_BRAKES,
+    SPR_G2_BM_INVERTED_DIAG_BRAKES + 1,
+};
+
 /** rct2: 0x008A92E8 */
 static void inverted_rc_track_flat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -6028,6 +6035,26 @@ static void inverted_rc_track_diag_flat(
     }
 }
 
+static void inverted_rc_track_diag_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    track_paint_util_diag_tiles_paint(
+        session, 1, height + 29, direction, trackSequence, session.TrackColours[SCHEME_TRACK], InvertedRCDiagBrakeImages,
+        defaultDiagTileOffsets, defaultDiagBoundLengths, nullptr);
+
+    int32_t blockedSegments = DiagBlockedSegments[trackSequence];
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments, direction), 0xFFFF, 0);
+
+    if (trackSequence == 3)
+    {
+        MetalASupportsPaintSetup(
+            session, METAL_SUPPORTS_TUBES_INVERTED, DiagSupportSegments[direction], 0, height + 44,
+            session.TrackColours[SCHEME_SUPPORTS]);
+    }
+    PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+}
+
 /** rct2: 0x008A97B8 */
 static void inverted_rc_track_diag_25_deg_up(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -10815,6 +10842,10 @@ TRACK_PAINT_FUNCTION get_track_paint_function_inverted_rc(int32_t trackType)
             return inverted_rc_track_left_banked_25_deg_down_to_flat;
         case TrackElemType::RightBankedDown25ToFlat:
             return inverted_rc_track_right_banked_25_deg_down_to_flat;
+
+        case TrackElemType::DiagBrakes:
+        case TrackElemType::DiagBlockBrakes:
+            return inverted_rc_track_diag_brakes;
 
         case TrackElemType::Booster:
             return inverted_rc_track_booster;

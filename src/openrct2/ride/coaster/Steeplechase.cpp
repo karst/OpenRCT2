@@ -18,6 +18,13 @@
 #include "../TrackData.h"
 #include "../TrackPaint.h"
 
+static constexpr const uint32_t SteeplechaseRCDiagBrakeImages[NumOrthogonalDirections] = {
+    SPR_G2_STEEPLECHASE_DIAG_BRAKES,
+    SPR_G2_STEEPLECHASE_DIAG_BRAKES + 1,
+    SPR_G2_STEEPLECHASE_DIAG_BRAKES,
+    SPR_G2_STEEPLECHASE_DIAG_BRAKES + 1,
+};
+
 /** rct2: 0x008A59A8 */
 static void steeplechase_track_flat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -1490,6 +1497,25 @@ static void steeplechase_track_diag_flat(
     }
 }
 
+void steeplechase_track_diag_brakes(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    track_paint_util_diag_tiles_paint(
+        session, 3, height, direction, trackSequence, session.TrackColours[SCHEME_TRACK], SteeplechaseRCDiagBrakeImages,
+        defaultDiagTileOffsets, defaultDiagBoundLengths, nullptr);
+
+    if (trackSequence == 3)
+    {
+        MetalASupportsPaintSetup(
+            session, METAL_SUPPORTS_STICK, DiagSupportSegments[direction], 0, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+
+    int32_t blockedSegments = DiagBlockedSegments[trackSequence];
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(blockedSegments, direction), 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+}
+
 /** rct2: 0x008A5B38 */
 static void steeplechase_track_diag_25_deg_up(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
@@ -2450,6 +2476,10 @@ TRACK_PAINT_FUNCTION get_track_paint_function_steeplechase(int32_t trackType)
             return steeplechase_track_diag_25_deg_down_to_flat;
         case TrackElemType::BlockBrakes:
             return steeplechase_track_block_brakes;
+        case TrackElemType::DiagBrakes:
+            return steeplechase_track_diag_brakes;
+        case TrackElemType::DiagBlockBrakes:
+            return steeplechase_track_diag_brakes;
     }
     return nullptr;
 }

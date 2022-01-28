@@ -6128,6 +6128,7 @@ void Vehicle::CheckAndApplyBlockSectionStopSite()
     switch (trackType)
     {
         case TrackElemType::BlockBrakes:
+        case TrackElemType::DiagBlockBrakes:
             if (curRide->IsBlockSectioned() && trackElement->AsTrack()->GetBrakeClosed())
                 ApplyStopBlockBrake();
             else
@@ -6231,25 +6232,25 @@ static void block_brakes_open_previous_section(Ride& ride, const CoordsXYZ& vehi
 
     // Get the start of the track block instead of the end
     location = { trackBeginEnd.begin_x, trackBeginEnd.begin_y, trackBeginEnd.begin_z };
-    auto trackElement = MapGetTrackElementAt(location);
+    auto trackElement = MapGetTrackElementAtOfTypeSeq(location, trackBeginEnd.begin_element->AsTrack()->GetTrackType(), 0);
     if (trackElement == nullptr)
     {
         return;
     }
-    trackElement->SetBrakeClosed(false);
+    trackElement->AsTrack()->SetBrakeClosed2(location, false);
     MapInvalidateElement(location, reinterpret_cast<TileElement*>(trackElement));
 
-    auto trackType = trackElement->GetTrackType();
+    auto trackType = trackElement->AsTrack()->GetTrackType();
     if (ride.IsBlockSectioned())
     {
         if (trackType == TrackElemType::EndStation)
         {
             OpenRCT2::Audio::Play3D(OpenRCT2::Audio::SoundId::BlockBrakeClose, location);
         }
-        else if (trackType == TrackElemType::BlockBrakes)
+        else if (TrackTypeIsBlockBrakes(trackType))
         {
             OpenRCT2::Audio::Play3D(OpenRCT2::Audio::SoundId::BlockBrakeClose, location);
-            BlockBrakeSetLinkedBrakesClosed(location, *trackElement, false);
+            BlockBrakeSetLinkedBrakesClosed(location, *trackElement->AsTrack(), false);
         }
     }
 }
@@ -6459,7 +6460,7 @@ void Vehicle::UpdateSwingingCar()
                 break;
         }
 
-        if (track_type_is_station(trackType) || trackType == TrackElemType::Brakes || trackType == TrackElemType::BlockBrakes)
+        if (track_type_is_station(trackType) || TrackTypeIsBrakes(trackType) || TrackTypeIsBlockBrakes(trackType))
         {
             dx = 0;
             cx = 0;
@@ -7411,9 +7412,8 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* cur
     {
         if (next_vehicle_on_train.IsNull())
         {
-            tileElement->AsTrack()->SetBrakeClosed(true);
-
-            if (trackType == TrackElemType::BlockBrakes || trackType == TrackElemType::EndStation)
+            tileElement->AsTrack()->SetBrakeClosed2(TrackLocation, true);
+            if (TrackTypeIsBlockBrakes(trackType) || trackType == TrackElemType::EndStation)
             {
                 if (!(rideEntry->Cars[0].flags & CAR_ENTRY_FLAG_POWERED))
                 {
@@ -7422,7 +7422,7 @@ bool Vehicle::UpdateTrackMotionForwardsGetNewTrack(uint16_t trackType, Ride* cur
             }
             MapInvalidateElement(TrackLocation, tileElement);
             block_brakes_open_previous_section(*curRide, TrackLocation, tileElement);
-            if (trackType == TrackElemType::BlockBrakes)
+            if (TrackTypeIsBlockBrakes(trackType))
             {
                 BlockBrakeSetLinkedBrakesClosed(TrackLocation, *tileElement->AsTrack(), true);
             }
@@ -7596,7 +7596,7 @@ loc_6DAEB9:
             acceleration = 0x50000;
         }
     }
-    else if (trackType == TrackElemType::Brakes)
+    else if (TrackTypeIsBrakes(trackType))
     {
         bool hasBrakesFailure = curRide->lifecycle_flags & RIDE_LIFECYCLE_BROKEN_DOWN
             && curRide->breakdown_reason_pending == BREAKDOWN_BRAKES_FAILURE;
@@ -7992,7 +7992,7 @@ bool Vehicle::UpdateTrackMotionBackwards(CarEntry* carEntry, Ride* curRide, rct_
             }
         }
 
-        if (trackType == TrackElemType::Brakes)
+        if (TrackTypeIsBrakes(trackType))
         {
             auto trackElement = MapGetTrackElementAtOfTypeSeq(TrackLocation, trackType, 0);
             if (((trackElement != nullptr && trackElement->AsTrack()->GetBrakeClosed()) || trackElement == nullptr)
