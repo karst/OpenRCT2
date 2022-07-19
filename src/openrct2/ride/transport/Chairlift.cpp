@@ -640,7 +640,28 @@ static void chairlift_paint_right_quarter_turn_1_tile(
     chairlift_paint_left_quarter_turn_1_tile(session, ride, trackSequence, (direction + 3) % 4, height, trackElement);
 }
 
-/* 0x008AAA0C */
+static void chairlift_paint_flat_covered(
+    paint_session& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement)
+{
+    uint32_t imageId;
+    if (direction & 1)
+    {
+        imageId = SPR_20503 | session.TrackColours[SCHEME_TRACK];
+        PaintAddImageAsParent(session, imageId, { 0, 0, height }, { 6, 32, 2 }, { 13, 0, height + 28 });
+        paint_util_push_tunnel_right(session, height, TUNNEL_SQUARE_FLAT);
+    }
+    else
+    {
+        imageId = SPR_20502 | session.TrackColours[SCHEME_TRACK];
+        PaintAddImageAsParent(session, imageId, { 0, 0, height }, { 32, 6, 2 }, { 0, 13, height + 28 });
+        paint_util_push_tunnel_left(session, height, TUNNEL_SQUARE_FLAT);
+    }
+    chairlift_paint_util_draw_supports(session, SEGMENT_C4, height + 28);
+    paint_util_set_segment_support_height(session, SEGMENTS_ALL, 0xFFFF, 0);
+    paint_util_set_general_support_height(session, height + 48, 0x20);
+}
+
 TRACK_PAINT_FUNCTION get_track_paint_function_chairlift(int32_t trackType)
 {
     switch (trackType)
@@ -671,6 +692,9 @@ TRACK_PAINT_FUNCTION get_track_paint_function_chairlift(int32_t trackType)
             return chairlift_paint_left_quarter_turn_1_tile;
         case TrackElemType::RightQuarterTurn1Tile:
             return chairlift_paint_right_quarter_turn_1_tile;
+
+        case TrackElemType::FlatCovered:
+            return chairlift_paint_flat_covered;
     }
 
     return nullptr;

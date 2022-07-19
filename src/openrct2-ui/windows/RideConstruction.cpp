@@ -2827,6 +2827,22 @@ static void WindowRideConstructionUpdateWidgets(rct_window* w)
                     window_ride_construction_widgets[WIDX_O_TRACK].type = WindowWidgetType::FlatBtn;
                 }
             }
+            else if (rideType == RIDE_TYPE_CHAIRLIFT)
+            {
+                window_ride_construction_widgets[WIDX_U_TRACK].image = SPR_G2_RIDE_CONSTRUCTION_CABLE_SUPPORTLESS;
+                window_ride_construction_widgets[WIDX_O_TRACK].image = SPR_G2_RIDE_CONSTRUCTION_CABLE_SUPPORTED;
+                window_ride_construction_widgets[WIDX_U_TRACK].tooltip = STR_RIDE_CONSTRUCTION_CABLE_SUPPORTLESS_TIP;
+                window_ride_construction_widgets[WIDX_O_TRACK].tooltip = STR_RIDE_CONSTRUCTION_CABLE_SUPPORTED_TIP;
+                if ((_currentTrackCurve < TRACK_CURVE_LEFT_SMALL
+                     || _currentTrackCurve == (RideConstructionSpecialPieceSelected | TrackElemType::SBendLeft)
+                     || _currentTrackCurve == (RideConstructionSpecialPieceSelected | TrackElemType::SBendRight))
+                    && _currentTrackSlopeEnd == TRACK_SLOPE_NONE && _currentTrackBankEnd == TRACK_BANK_NONE)
+                {
+                    window_ride_construction_widgets[WIDX_BANKING_GROUPBOX].text = STR_RIDE_CONSTRUCTION_TRACK_STYLE;
+                    window_ride_construction_widgets[WIDX_U_TRACK].type = WindowWidgetType::FlatBtn;
+                    window_ride_construction_widgets[WIDX_O_TRACK].type = WindowWidgetType::FlatBtn;
+                }
+            }
             else
             {
                 window_ride_construction_widgets[WIDX_U_TRACK].image = SPR_RIDE_CONSTRUCTION_U_SHAPED_TRACK;
