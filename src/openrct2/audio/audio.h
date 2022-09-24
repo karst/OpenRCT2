@@ -23,7 +23,7 @@ struct CoordsXYZ;
 namespace OpenRCT2::Audio
 {
     constexpr size_t MaxDeviceNameSize = 256;
-    constexpr size_t MaxVehicleSounds = 14;
+    constexpr size_t MaxVehicleSounds = 16;
     constexpr size_t MaxDefaultMusic = 46;
     constexpr uint16_t SoundIdNull = 0xFFFF;
 
@@ -127,6 +127,8 @@ namespace OpenRCT2::Audio
         DoorClose,
         Portcullis,
         CrowdAmbience,
+        LiftRMC,
+        TrackFrictionRMC,
         NoScream = 254,
         Null = 255
     };
@@ -140,6 +142,7 @@ namespace OpenRCT2::Audio
         constexpr std::string_view Rct2cBase = "rct2.audio.base.rctc";
         constexpr std::string_view Rct2Title = "rct2.audio.title";
         constexpr std::string_view Rct2Circus = "rct2.audio.circus";
+        constexpr std::string_view OpenRCT2Base = "openrct2.audio.base";
     } // namespace AudioObjectIdentifiers
 
     extern bool gGameSoundsOff;
