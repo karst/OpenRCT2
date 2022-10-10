@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2020 OpenRCT2 developers
+ * Copyright (c) 2014-2022 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -41,8 +41,6 @@ using namespace OpenRCT2::Entity::Yaw;
 static const uint8_t SpriteGroupMultiplier[EnumValue(SpriteGroupType::Count)] = {
     1, 2, 2, 2, 2, 2, 2, 10, 1, 2, 2, 2, 2, 2, 2, 2, 6, 4, 4, 4, 4, 4, 4, 4, 12, 4, 4, 4, 4, 4, 20, 3, 1,
 };
-
-static constexpr uint8_t RiverRapidsNumSpinningSprites = 8;
 
 static constexpr SpritePrecision PrecisionFromNumFrames(uint8_t numRotationFrames)
 {
@@ -231,33 +229,16 @@ void RideObject::Load()
             uint32_t imageIndex = baseImageId;
             carEntry->base_image_id = baseImageId;
 
-            switch (carEntry->PaintStyle)
+            for (uint8_t spriteGroup = 0; spriteGroup < EnumValue(SpriteGroupType::Count); spriteGroup++)
             {
-                case VEHICLE_VISUAL_RIVER_RAPIDS:
-                case VEHICLE_VISUAL_VIRGINIA_REEL:
-                    // Paint code for these rides do not use sprite groups but #17909 requires them. Dummy sprite groups are
-                    // added.
-                    carEntry->SpriteGroups[EnumValue(SpriteGroupType::SlopeFlat)] = { baseImageId, SpritePrecision::Sprites1 };
-                    carEntry->SpriteGroups[EnumValue(SpriteGroupType::Slopes12)] = {
-                        baseImageId + RiverRapidsNumSpinningSprites, SpritePrecision::Sprites4
-                    };
-                    carEntry->SpriteGroups[EnumValue(SpriteGroupType::Slopes25)] = {
-                        baseImageId + RiverRapidsNumSpinningSprites + RiverRapidsNumSpinningSprites * NumOrthogonalDirections,
-                        SpritePrecision::Sprites4
-                    };
-                    break;
-                default:
-                    for (uint8_t spriteGroup = 0; spriteGroup < EnumValue(SpriteGroupType::Count); spriteGroup++)
-                    {
-                        if (carEntry->SpriteGroups[spriteGroup].Enabled())
-                        {
-                            carEntry->SpriteGroups[spriteGroup].imageId = imageIndex;
-                            const auto spriteCount = carEntry->base_num_frames
-                                * carEntry->NumRotationSprites(static_cast<SpriteGroupType>(spriteGroup))
-                                * SpriteGroupMultiplier[spriteGroup];
-                            imageIndex += spriteCount;
-                        }
-                    }
+                if (carEntry->SpriteGroups[spriteGroup].Enabled())
+                {
+                    carEntry->SpriteGroups[spriteGroup].imageId = imageIndex;
+                    const auto spriteCount = carEntry->base_num_frames
+                        * carEntry->NumRotationSprites(static_cast<SpriteGroupType>(spriteGroup))
+                        * SpriteGroupMultiplier[spriteGroup];
+                    imageIndex += spriteCount;
+                }
             }
 
             carEntry->NumCarImages = imageIndex - currentCarImagesOffset;
@@ -345,7 +326,7 @@ ImageIndex RideObject::GetPreviewImage(ride_type_t type)
 void RideObject::SetRepositoryItem(ObjectRepositoryItem* item) const
 {
     // Find the first non-null ride type, to be used when checking the ride group and determining the category.
-    uint8_t firstRideType = ride_entry_get_first_non_null_ride_type(&_legacyType);
+    auto firstRideType = _legacyType.GetFirstNonNullRideType();
     uint8_t category = GetRideTypeDescriptor(firstRideType).Category;
 
     for (int32_t i = 0; i < RCT2::ObjectLimits::MaxRideTypesPerRideEntry; i++)

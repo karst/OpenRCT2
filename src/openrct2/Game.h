@@ -102,6 +102,7 @@ enum class GameCommand : int32_t
     SetDate,                  // GA
     Custom,                   // GA
     ChangeMapSize,
+    FreezeRideRating,
     Count,
 };
 
@@ -143,6 +144,8 @@ extern float gDayNightCycle;
 extern bool gInUpdateCode;
 extern bool gInMapInitCode;
 extern std::string gCurrentLoadedPath;
+extern bool gIsAutosave;
+extern bool gIsAutosaveLoaded;
 
 extern bool gLoadKeepWindowsOpen;
 
@@ -155,7 +158,6 @@ void reset_all_sprite_quadrant_placements();
 void update_palette_effects();
 
 void game_load_or_quit_no_save_prompt();
-void load_from_sv6(const char* path);
 void game_load_init();
 void game_load_scripts();
 void game_unload_scripts();

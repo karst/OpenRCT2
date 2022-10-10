@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2021 OpenRCT2 developers
+ * Copyright (c) 2014-2022 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -33,7 +33,7 @@ protected:
         bool initialised = _context->Initialise();
         ASSERT_TRUE(initialised);
 
-        load_from_sv6(parkPath.c_str());
+        GetContext()->LoadParkFromFile(parkPath);
         game_load_init();
 
         // Changed in some tests. Store to restore its value

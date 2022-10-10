@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2020 OpenRCT2 developers
+ * Copyright (c) 2014-2022 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -531,10 +531,10 @@ bool Staff::DoHandymanPathFinding()
                 }
                 else
                 {
-                    pathDirections &= ~(1 << direction_reverse(PeepDirection));
+                    pathDirections &= ~(1 << DirectionReverse(PeepDirection));
                     if (pathDirections == 0)
                     {
-                        pathDirections |= 1 << direction_reverse(PeepDirection);
+                        pathDirections |= 1 << DirectionReverse(PeepDirection);
                     }
                 }
 
@@ -550,7 +550,7 @@ bool Staff::DoHandymanPathFinding()
     }
 
     // newDirection can only contain a cardinal direction at this point, no diagonals
-    assert(direction_valid(newDirection));
+    assert(DirectionValid(newDirection));
 
     CoordsXY chosenTile = CoordsXY{ NextLoc } + CoordsDirectionDelta[newDirection];
 
@@ -591,10 +591,10 @@ Direction Staff::DirectionSurface(Direction initialDirection) const
 
         direction &= 3;
 
-        if (fence_in_the_way({ NextLoc, NextLoc.z, NextLoc.z + PEEP_CLEARANCE_HEIGHT }, direction))
+        if (WallInTheWay({ NextLoc, NextLoc.z, NextLoc.z + PEEP_CLEARANCE_HEIGHT }, direction))
             continue;
 
-        if (fence_in_the_way({ NextLoc, NextLoc.z, NextLoc.z + PEEP_CLEARANCE_HEIGHT }, direction_reverse(direction)))
+        if (WallInTheWay({ NextLoc, NextLoc.z, NextLoc.z + PEEP_CLEARANCE_HEIGHT }, DirectionReverse(direction)))
             continue;
 
         CoordsXY chosenTile = CoordsXY{ NextLoc } + CoordsDirectionDelta[direction];
@@ -669,10 +669,10 @@ Direction Staff::MechanicDirectionPath(uint8_t validDirections, PathElement* pat
     }
 
     // Check if this is dead end - i.e. only way out is the reverse direction.
-    pathDirections &= ~(1 << direction_reverse(PeepDirection));
+    pathDirections &= ~(1 << DirectionReverse(PeepDirection));
     if (pathDirections == 0)
     {
-        pathDirections |= (1 << direction_reverse(PeepDirection));
+        pathDirections |= (1 << DirectionReverse(PeepDirection));
     }
 
     Direction direction = bitscanforward(pathDirections);
@@ -767,7 +767,7 @@ bool Staff::DoMechanicPathFinding()
     }
 
     // countof(CoordsDirectionDelta)
-    assert(direction_valid(newDirection));
+    assert(DirectionValid(newDirection));
 
     CoordsXY chosenTile = CoordsXY{ NextLoc } + CoordsDirectionDelta[newDirection];
 
@@ -801,10 +801,10 @@ Direction Staff::DirectionPath(uint8_t validDirections, PathElement* pathElement
         return DirectionSurface(scenario_rand() & 3);
     }
 
-    pathDirections &= ~(1 << direction_reverse(PeepDirection));
+    pathDirections &= ~(1 << DirectionReverse(PeepDirection));
     if (pathDirections == 0)
     {
-        pathDirections |= (1 << direction_reverse(PeepDirection));
+        pathDirections |= (1 << DirectionReverse(PeepDirection));
     }
 
     Direction direction = bitscanforward(pathDirections);
@@ -815,7 +815,7 @@ Direction Staff::DirectionPath(uint8_t validDirections, PathElement* pathElement
     }
 
     direction = scenario_rand() & 3;
-    for (uint8_t i = 0; i < NumOrthogonalDirections; ++i, direction = direction_next(direction))
+    for (uint8_t i = 0; i < NumOrthogonalDirections; ++i, direction = DirectionNext(direction))
     {
         if (pathDirections & (1 << direction))
             return direction;
@@ -860,6 +860,21 @@ bool Staff::DoMiscPathFinding()
     SetDestination(chosenTile + CoordsXY{ 16, 16 }, tolerance);
 
     return false;
+}
+
+bool Staff::IsMechanicHeadingToFixRideBlockingPath()
+{
+    if (!IsMechanic())
+        return false;
+
+    auto tileCoords = TileCoordsXYZ(CoordsXYZ{ GetDestination(), NextLoc.z });
+    auto trackElement = MapGetFirstTileElementWithBaseHeightBetween<TrackElement>(
+        { tileCoords, tileCoords.z + PATH_HEIGHT_STEP });
+    if (trackElement == nullptr)
+        return false;
+
+    auto ride = get_ride(trackElement->GetRideIndex());
+    return ride->id == CurrentRide && ride->breakdown_reason == BREAKDOWN_SAFETY_CUT_OUT;
 }
 
 /**
@@ -1012,7 +1027,7 @@ uint32_t staff_get_available_entertainer_costumes()
     {
         if (scenery_group_is_invented(i))
         {
-            const auto sgEntry = get_scenery_group_entry(i);
+            const auto sgEntry = GetSceneryGroupEntry(i);
             entertainerCostumes |= sgEntry->entertainer_costumes;
         }
     }
@@ -1323,6 +1338,9 @@ void Staff::UpdateHeadingToInspect()
         if (!CheckForPath())
             return;
 
+        if (ShouldWaitForLevelCrossing() && !IsMechanicHeadingToFixRideBlockingPath())
+            return;
+
         uint8_t pathingResult;
         TileElement* rideEntranceExitElement;
         PerformNextAction(pathingResult, rideEntranceExitElement);
@@ -1426,6 +1444,9 @@ void Staff::UpdateAnswering()
         }
 
         if (!CheckForPath())
+            return;
+
+        if (ShouldWaitForLevelCrossing() && !IsMechanicHeadingToFixRideBlockingPath())
             return;
 
         uint8_t pathingResult;
@@ -1758,6 +1779,9 @@ void Staff::UpdateStaff(uint32_t stepsToTake)
 void Staff::UpdatePatrolling()
 {
     if (!CheckForPath())
+        return;
+
+    if (ShouldWaitForLevelCrossing() && !IsMechanicHeadingToFixRideBlockingPath())
         return;
 
     uint8_t pathingResult;

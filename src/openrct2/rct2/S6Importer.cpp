@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2020 OpenRCT2 developers
+ * Copyright (c) 2014-2022 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -52,7 +52,6 @@
 #include "../rct12/EntryList.h"
 #include "../rct12/RCT12.h"
 #include "../rct12/SawyerChunkReader.h"
-#include "../rct12/SawyerEncoding.h"
 #include "../rct2/RCT2.h"
 #include "../ride/Ride.h"
 #include "../ride/RideData.h"
@@ -141,12 +140,6 @@ namespace RCT2
             OpenRCT2::IStream* stream, bool isScenario, [[maybe_unused]] bool skipObjectCheck = false,
             const utf8* path = String::Empty) override
         {
-            if (isScenario && !gConfigGeneral.allow_loading_with_incorrect_checksum
-                && !SawyerEncoding::ValidateChecksum(stream))
-            {
-                throw IOException("Invalid checksum.");
-            }
-
             auto chunkReader = SawyerChunkReader(stream);
             chunkReader.ReadChunk(&_s6.header, sizeof(_s6.header));
 
@@ -542,6 +535,9 @@ namespace RCT2
 
         void FixLandOwnership() const
         {
+            // Checking _s6.scenario_filename is generally more reliable as it survives renaming.
+            // However, some WW/TT scenarios have this incorrectly set to "Six Flags Magic Mountain.SC6",
+            // so for those cases (as well as for SFMM proper, we’ll have to check the filename.
             if (String::Equals(_s6.scenario_filename, "Europe - European Cultural Festival.SC6"))
             {
                 // This scenario breaks pathfinding. Create passages between the worlds. (List is grouped by neighbouring
@@ -557,7 +553,67 @@ namespace RCT2
                     OWNERSHIP_OWNED);
                 // clang-format on
             }
-            else if (String::Equals(gScenarioFileName, "N America - Extreme Hawaiian Island.SC6"))
+            else if (String::Equals(_s6.scenario_filename, "Six Flags Holland.SC6"))
+            {
+                // clang-format off
+                FixLandOwnershipTilesWithOwnership(
+                    {
+                        { 112, 33 }, { 112, 34 },
+                        { 113, 117 }, { 114, 117 }, { 115, 117 }, { 116, 117 }, { 117, 117 }, { 114, 118 }, { 115, 118 }, { 116, 118 }, { 117, 118 },
+                    },
+                    OWNERSHIP_AVAILABLE, true);
+                // clang-format on
+            }
+            else if (String::Equals(_s6.scenario_filename, "North America - Grand Canyon.SC6"))
+            {
+                // clang-format off
+                FixLandOwnershipTilesWithOwnership(
+                    {
+                        { 128, 90 },
+                        { 135, 91 }, { 136, 91 },
+                        { 129, 90 }, { 130, 90 }, { 131, 90 }, { 132, 90 }, 
+                        { 137, 92 }, { 138, 92 }, { 139, 92 }, { 140, 92 },
+                        { 125, 88 }, { 126, 89 }, { 127, 91 }, { 127, 92 }, { 127, 93 },
+                        {  47, 85 }, {  48, 85 },
+                        {  32, 97 },
+                    },
+                    OWNERSHIP_CONSTRUCTION_RIGHTS_AVAILABLE, true);
+                FixLandOwnershipTilesWithOwnership(
+                    {
+                        {  98, 64 }, {  98, 65 }, {  98, 66 },
+                        {  96, 84 },
+                    },
+                    OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED, true);
+                // clang-format on
+            }
+            else if (
+                String::Equals(gScenarioFileName, "Six Flags Magic Mountain.SC6", true)
+                || String::Equals(gScenarioFileName, "six flags magic mountain.sea", true))
+            {
+                // clang-format off
+                FixLandOwnershipTilesWithOwnership(
+                    {
+                        { 104, 190 }, { 105, 190 }, { 108, 197 }, 
+                        { 75, 167 }, 
+                        { 61, 92 }, { 61, 93 }, { 61, 94 }, { 61, 95 }, { 62, 90 }, { 62, 91 }, { 62, 92 }, { 62, 93 }, { 62, 94 },
+                        { 92, 57 }, { 93, 57 },
+                        { 89, 40 }, { 89, 41 }, { 89, 42 }, { 90, 42 }, 
+                        { 168, 20 }, { 169, 20 },
+                    },
+                    OWNERSHIP_AVAILABLE, true);
+                // clang-format on
+            }
+            else if (String::Equals(_s6.scenario_filename, "Great Wall of China Tourism Enhancement.SC6"))
+            {
+                FixLandOwnershipTilesWithOwnership(
+                    {
+                        { 127, 31 },
+                    },
+                    OWNERSHIP_OWNED);
+            }
+            else if (
+                String::Equals(gScenarioFileName, "N America - Extreme Hawaiian Island.SC6", true)
+                || String::Equals(gScenarioFileName, "n america - extreme hawaiian island.sea", true))
             {
                 FixLandOwnershipTilesWithOwnership(
                     {
@@ -688,7 +744,7 @@ namespace RCT2
                 ObjectEntryIndex originalRideType = src->type;
                 if (rideEntry != nullptr)
                 {
-                    originalRideType = ride_entry_get_first_non_null_ride_type(rideEntry);
+                    originalRideType = rideEntry->GetFirstNonNullRideType();
                 }
                 const auto isFlatRide = GetRideTypeDescriptor(originalRideType).HasFlag(RIDE_TYPE_FLAG_FLAT_RIDE);
                 _isFlatRide.set(static_cast<size_t>(index), isFlatRide);
@@ -822,9 +878,9 @@ namespace RCT2
             dst->depart_flags = src->depart_flags;
 
             dst->num_stations = src->num_stations;
-            dst->num_vehicles = src->num_vehicles;
+            dst->NumTrains = src->NumTrains;
             dst->num_cars_per_train = src->num_cars_per_train;
-            dst->proposed_num_vehicles = src->proposed_num_vehicles;
+            dst->ProposedNumTrains = src->ProposedNumTrains;
             dst->proposed_num_cars_per_train = src->proposed_num_cars_per_train;
             dst->max_trains = src->max_trains;
             dst->MinCarsPerTrain = src->GetMinCarsPerTrain();
@@ -2252,86 +2308,4 @@ namespace RCT2
 std::unique_ptr<IParkImporter> ParkImporter::CreateS6(IObjectRepository& objectRepository)
 {
     return std::make_unique<RCT2::S6Importer>(objectRepository);
-}
-
-static void show_error(uint8_t errorType, StringId errorStringId)
-{
-    if (errorType == ERROR_TYPE_GENERIC)
-    {
-        context_show_error(errorStringId, STR_NONE, {});
-    }
-    context_show_error(STR_UNABLE_TO_LOAD_FILE, errorStringId, {});
-}
-
-void load_from_sv6(const char* path)
-{
-    auto context = OpenRCT2::GetContext();
-    auto s6Importer = std::make_unique<RCT2::S6Importer>(context->GetObjectRepository());
-    try
-    {
-        auto& objectMgr = context->GetObjectManager();
-        auto result = s6Importer->LoadSavedGame(path);
-        objectMgr.LoadObjects(result.RequiredObjects);
-        s6Importer->Import();
-        game_fix_save_vars();
-        AutoCreateMapAnimations();
-        EntityTweener::Get().Reset();
-        gScreenAge = 0;
-        gLastAutoSaveUpdate = AUTOSAVE_PAUSE;
-    }
-    catch (const ObjectLoadException&)
-    {
-        show_error(ERROR_TYPE_FILE_LOAD, STR_FILE_CONTAINS_INVALID_DATA);
-    }
-    catch (const IOException& loadError)
-    {
-        log_error("Error loading: %s", loadError.what());
-        show_error(ERROR_TYPE_FILE_LOAD, STR_GAME_SAVE_FAILED);
-    }
-    catch (const UnsupportedRideTypeException&)
-    {
-        show_error(ERROR_TYPE_FILE_LOAD, STR_FILE_CONTAINS_UNSUPPORTED_RIDE_TYPES);
-    }
-    catch (const std::exception&)
-    {
-        show_error(ERROR_TYPE_FILE_LOAD, STR_FILE_CONTAINS_INVALID_DATA);
-    }
-}
-
-/**
- *
- *  rct2: 0x00676053
- * scenario (ebx)
- */
-void load_from_sc6(const char* path)
-{
-    auto context = OpenRCT2::GetContext();
-    auto& objManager = context->GetObjectManager();
-    auto s6Importer = std::make_unique<RCT2::S6Importer>(context->GetObjectRepository());
-    try
-    {
-        auto result = s6Importer->LoadScenario(path);
-        objManager.LoadObjects(result.RequiredObjects);
-        s6Importer->Import();
-        game_fix_save_vars();
-        AutoCreateMapAnimations();
-        EntityTweener::Get().Reset();
-        return;
-    }
-    catch (const ObjectLoadException& loadError)
-    {
-        log_error("Error loading: %s", loadError.what());
-        show_error(ERROR_TYPE_FILE_LOAD, STR_GAME_SAVE_FAILED);
-    }
-    catch (const IOException& loadError)
-    {
-        log_error("Error loading: %s", loadError.what());
-        show_error(ERROR_TYPE_FILE_LOAD, STR_GAME_SAVE_FAILED);
-    }
-    catch (const std::exception&)
-    {
-        show_error(ERROR_TYPE_FILE_LOAD, STR_FILE_CONTAINS_INVALID_DATA);
-    }
-    gScreenAge = 0;
-    gLastAutoSaveUpdate = AUTOSAVE_PAUSE;
 }

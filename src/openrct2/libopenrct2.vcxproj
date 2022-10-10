@@ -111,6 +111,7 @@
     <ClInclude Include="actions\RideDemolishAction.h" />
     <ClInclude Include="actions\RideEntranceExitPlaceAction.h" />
     <ClInclude Include="actions\RideEntranceExitRemoveAction.h" />
+    <ClInclude Include="actions\RideFreezeRatingAction.h" />
     <ClInclude Include="actions\RideSetAppearanceAction.h" />
     <ClInclude Include="actions\RideSetColourSchemeAction.h" />
     <ClInclude Include="actions\RideSetNameAction.h" />
@@ -344,7 +345,6 @@
     <ClInclude Include="rct12\SawyerChunk.h" />
     <ClInclude Include="rct12\SawyerChunkReader.h" />
     <ClInclude Include="rct12\SawyerChunkWriter.h" />
-    <ClInclude Include="rct12\SawyerEncoding.h" />
     <ClInclude Include="rct1\Limits.h" />
     <ClInclude Include="rct1\RCT1.h" />
     <ClInclude Include="rct1\Tables.h" />
@@ -610,6 +610,7 @@
     <ClCompile Include="actions\RideDemolishAction.cpp" />
     <ClCompile Include="actions\RideEntranceExitPlaceAction.cpp" />
     <ClCompile Include="actions\RideEntranceExitRemoveAction.cpp" />
+    <ClCompile Include="actions\RideFreezeRatingAction.cpp" />
     <ClCompile Include="actions\RideSetAppearanceAction.cpp" />
     <ClCompile Include="actions\RideSetColourSchemeAction.cpp" />
     <ClCompile Include="actions\RideSetNameAction.cpp" />
@@ -839,7 +840,6 @@
     <ClCompile Include="rct12\SawyerChunk.cpp" />
     <ClCompile Include="rct12\SawyerChunkReader.cpp" />
     <ClCompile Include="rct12\SawyerChunkWriter.cpp" />
-    <ClCompile Include="rct12\SawyerEncoding.cpp" />
     <ClCompile Include="rct1\S4Importer.cpp" />
     <ClCompile Include="rct1\T4Importer.cpp" />
     <ClCompile Include="rct1\Tables.cpp" />

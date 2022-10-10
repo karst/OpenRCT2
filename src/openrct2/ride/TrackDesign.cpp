@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2020 OpenRCT2 developers
+ * Copyright (c) 2014-2022 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -124,7 +124,7 @@ StringId TrackDesign::CreateTrackDesign(TrackDesignState& tds, const Ride& ride)
     }
 
     depart_flags = ride.depart_flags;
-    number_of_trains = ride.num_vehicles;
+    number_of_trains = ride.NumTrains;
     number_of_cars_per_train = ride.num_cars_per_train;
     min_waiting_time = ride.min_waiting_time;
     max_waiting_time = ride.max_waiting_time;
@@ -890,7 +890,7 @@ static void TrackDesignMirrorRide(TrackDesign* td6)
         entrance.y = -entrance.y;
         if (entrance.direction & 1)
         {
-            entrance.direction = direction_reverse(entrance.direction);
+            entrance.direction = DirectionReverse(entrance.direction);
         }
     }
 }
@@ -914,7 +914,7 @@ static void TrackDesignMirrorMaze(TrackDesign* td6)
         {
             if (maze.direction & 1)
             {
-                maze.direction = direction_reverse(maze.direction);
+                maze.direction = DirectionReverse(maze.direction);
             }
             continue;
         }
@@ -1257,8 +1257,11 @@ static GameActions::Result TrackDesignPlaceSceneryElement(
                     return GameActions::Result();
                 }
 
-                footpath_queue_chain_reset();
-                footpath_remove_edges_at(mapCoord, reinterpret_cast<TileElement*>(pathElement));
+                if (tds.PlaceOperation == PTD_OPERATION_PLACE)
+                {
+                    FootpathQueueChainReset();
+                    FootpathRemoveEdgesAt(mapCoord, reinterpret_cast<TileElement*>(pathElement));
+                }
 
                 flags = GAME_COMMAND_FLAG_APPLY;
                 if (tds.PlaceOperation == PTD_OPERATION_PLACE_TRACK_PREVIEW)
@@ -1274,8 +1277,13 @@ static GameActions::Result TrackDesignPlaceSceneryElement(
                 {
                     flags |= GAME_COMMAND_FLAG_REPLAY;
                 }
-                footpath_connect_edges(mapCoord, reinterpret_cast<TileElement*>(pathElement), flags);
-                footpath_update_queue_chains();
+
+                if (tds.PlaceOperation == PTD_OPERATION_PLACE)
+                {
+                    FootpathConnectEdges(mapCoord, reinterpret_cast<TileElement*>(pathElement), flags);
+                    FootpathUpdateQueueChains();
+                }
+
                 return GameActions::Result();
             }
             break;

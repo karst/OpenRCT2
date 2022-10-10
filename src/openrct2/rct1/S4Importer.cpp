@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2020 OpenRCT2 developers
+ * Copyright (c) 2014-2022 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -903,9 +903,9 @@ namespace RCT1
                 dst->vehicles[i] = EntityId::GetNull();
             }
 
-            dst->num_vehicles = src->num_trains;
+            dst->NumTrains = src->NumTrains;
             dst->num_cars_per_train = src->num_cars_per_train + rideEntry->zero_cars;
-            dst->proposed_num_vehicles = src->num_trains;
+            dst->ProposedNumTrains = src->NumTrains;
             dst->max_trains = src->max_trains;
             dst->proposed_num_cars_per_train = src->num_cars_per_train + rideEntry->zero_cars;
             dst->special_track_elements = src->special_track_elements;
@@ -2229,7 +2229,7 @@ namespace RCT1
 
                     if (rideEntry != nullptr)
                     {
-                        auto rideType = ride_entry_get_first_non_null_ride_type(rideEntry);
+                        auto rideType = rideEntry->GetFirstNonNullRideType();
                         dst->entryIndex = entryIndex;
                         dst->baseRideType = rideType;
                         dst->type = Research::EntryType::Ride;
@@ -2248,7 +2248,7 @@ namespace RCT1
 
                     if (rideEntry != nullptr)
                     {
-                        auto rideType = ride_entry_get_first_non_null_ride_type(rideEntry);
+                        auto rideType = rideEntry->GetFirstNonNullRideType();
                         dst->entryIndex = entryIndex;
                         dst->baseRideType = rideType;
                         dst->type = Research::EntryType::Ride;
@@ -2544,11 +2544,11 @@ namespace RCT1
                     exitElement->SetEntranceType(ENTRANCE_TYPE_RIDE_EXIT);
 
                     // Trigger footpath update
-                    footpath_queue_chain_reset();
-                    footpath_connect_edges(
+                    FootpathQueueChainReset();
+                    FootpathConnectEdges(
                         entranceCoords.ToCoordsXY(), reinterpret_cast<TileElement*>(entranceElement),
                         GAME_COMMAND_FLAG_APPLY | GAME_COMMAND_FLAG_ALLOW_DURING_PAUSED);
-                    footpath_update_queue_chains();
+                    FootpathUpdateQueueChains();
                 }
             }
         }
@@ -3081,22 +3081,4 @@ namespace RCT1
 std::unique_ptr<IParkImporter> ParkImporter::CreateS4()
 {
     return std::make_unique<RCT1::S4Importer>();
-}
-
-void load_from_sv4(const utf8* path)
-{
-    auto& objectMgr = GetContext()->GetObjectManager();
-    auto s4Importer = std::make_unique<RCT1::S4Importer>();
-    auto result = s4Importer->LoadSavedGame(path);
-    objectMgr.LoadObjects(result.RequiredObjects);
-    s4Importer->Import();
-}
-
-void load_from_sc4(const utf8* path)
-{
-    auto& objectMgr = GetContext()->GetObjectManager();
-    auto s4Importer = std::make_unique<RCT1::S4Importer>();
-    auto result = s4Importer->LoadScenario(path);
-    objectMgr.LoadObjects(result.RequiredObjects);
-    s4Importer->Import();
 }

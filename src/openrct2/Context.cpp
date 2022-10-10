@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014-2020 OpenRCT2 developers
+ * Copyright (c) 2014-2022 OpenRCT2 developers
  *
  * For a complete list of all authors, please refer to contributors.md
  * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
@@ -650,7 +650,7 @@ namespace OpenRCT2
                 gCurrentLoadedPath = path;
                 gFirstTimeSaving = true;
                 game_fix_save_vars();
-                AutoCreateMapAnimations();
+                MapAnimationAutoCreate();
                 EntityTweener::Get().Reset();
                 gScreenAge = 0;
                 gLastAutoSaveUpdate = AUTOSAVE_PAUSE;
@@ -1358,11 +1358,6 @@ namespace OpenRCT2
 void context_init()
 {
     GetContext()->GetUiContext()->GetWindowManager()->Init();
-}
-
-bool context_load_park_from_file(const utf8* path)
-{
-    return GetContext()->LoadParkFromFile(path);
 }
 
 bool context_load_park_from_stream(void* stream)
