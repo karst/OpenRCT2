@@ -142,7 +142,6 @@ namespace OpenRCT2::Audio
         constexpr std::string_view Rct2cBase = "rct2.audio.base.rctc";
         constexpr std::string_view Rct2Title = "rct2.audio.title";
         constexpr std::string_view Rct2Circus = "rct2.audio.circus";
-        constexpr std::string_view OpenRCT2Base = "openrct2.audio.base";
     } // namespace AudioObjectIdentifiers
 
     extern bool gGameSoundsOff;
