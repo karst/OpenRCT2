@@ -5950,8 +5950,7 @@ void stand_up_rc_track_diag_block_brakes(
 {
     track_paint_util_diag_tiles_paint(
         session, 3, height, direction, trackSequence, session.TrackColours[SCHEME_TRACK],
-        StandupRCDiagBlockBrakeImages[trackElement.GetBrakeClosed()], defaultDiagTileOffsets, defaultDiagBoundLengths,
-        nullptr);
+        StandupRCDiagBlockBrakeImages[trackElement.GetBrakeClosed()], defaultDiagTileOffsets, defaultDiagBoundLengths, nullptr);
 
     if (trackSequence == 3)
     {

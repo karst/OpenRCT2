@@ -5016,14 +5016,12 @@ void mine_train_rc_track_diag_brakes(
     if (trackSequence == 1)
     {
         int32_t woodenSupportSegments[] = { 8, 9, 10, 11 };
-        WoodenASupportsPaintSetup(
-            session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+        WoodenASupportsPaintSetup(session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
     }
     if (trackSequence == 2)
     {
         int32_t woodenSupportSegments[] = { 10, 11, 8, 9 };
-        WoodenASupportsPaintSetup(
-            session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+        WoodenASupportsPaintSetup(session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
     }
 
     PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
@@ -5042,14 +5040,12 @@ void mine_train_rc_track_diag_block_brakes(
     if (trackSequence == 1)
     {
         int32_t woodenSupportSegments[] = { 8, 9, 10, 11 };
-        WoodenASupportsPaintSetup(
-            session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+        WoodenASupportsPaintSetup(session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
     }
     if (trackSequence == 2)
     {
         int32_t woodenSupportSegments[] = { 10, 11, 8, 9 };
-        WoodenASupportsPaintSetup(
-            session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+        WoodenASupportsPaintSetup(session, woodenSupportSegments[direction], 8, height, session.TrackColours[SCHEME_SUPPORTS]);
     }
 
     PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);

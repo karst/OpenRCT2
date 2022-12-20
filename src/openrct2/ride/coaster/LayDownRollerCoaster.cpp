@@ -9003,7 +9003,6 @@ static void lay_down_rc_track_diag_block_brakes(
     }
 }
 
-
 /** rct2: 0x00824E2C */
 static void lay_down_rc_track_diag_25_deg_up(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
