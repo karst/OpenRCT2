@@ -18305,37 +18305,37 @@
         "palette": "green"
     },
     {
-        "path": "track/limlaunched/brake_horizontal.png",
+        "path": "track/lim/brake_horizontal.png",
         "x_offset": -32,
         "y_offset": 7,
         "palette": "green"
     },
     {
-        "path": "track/limlaunched/brake_vertical.png",
+        "path": "track/lim/brake_vertical.png",
         "x_offset": -10,
         "y_offset": -5,
         "palette": "green"
     },
     {
-        "path": "track/limlaunched/blockbrake_horizontal_closed.png",
+        "path": "track/lim/blockbrake_horizontal_closed.png",
         "x_offset": -32,
         "y_offset": 7,
         "palette": "green"
     },
     {
-        "path": "track/limlaunched/blockbrake_horizontal_open.png",
+        "path": "track/lim/blockbrake_horizontal_open.png",
         "x_offset": -32,
         "y_offset": 7,
         "palette": "green"
     },
     {
-        "path": "track/limlaunched/blockbrake_vertical_closed.png",
+        "path": "track/lim/blockbrake_vertical_closed.png",
         "x_offset": -10,
         "y_offset": -5,
         "palette": "green"
     },
     {
-        "path": "track/limlaunched/blockbrake_vertical_open.png",
+        "path": "track/lim/blockbrake_vertical_open.png",
         "x_offset": -10,
         "y_offset": -5,
         "palette": "green"
