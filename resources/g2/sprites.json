@@ -18341,13 +18341,13 @@
         "palette": "green"
     },
     {
-        "path": "track/bm/brake_horizontal.png",
+        "path": "track/bm_invert/brake_horizontal.png",
         "x_offset": -32,
         "y_offset": 2,
         "palette": "green"
     },
     {
-        "path": "track/bm/brake_vertical.png",
+        "path": "track/bm_invert/brake_vertical.png",
         "x_offset": -13,
         "y_offset": -13,
         "palette": "green"
