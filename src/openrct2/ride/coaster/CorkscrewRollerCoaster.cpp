@@ -37,33 +37,9 @@ static void CorkscrewRCTrackFlat(
 {
     if (trackElement.HasChain())
     {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16226), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16227), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16228), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16229), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 0, height, session.TrackColours[SCHEME_SUPPORTS]);
-        }
+        PaintAddImageAsParentRotated(
+            session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16226 + direction), { 0, 0, height },
+            { 32, 20, 3 }, { 0, 6, height });
     }
     else
     {
@@ -82,11 +58,13 @@ static void CorkscrewRCTrackFlat(
                     { 0, 6, height });
                 break;
         }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 0, height, session.TrackColours[SCHEME_SUPPORTS]);
-        }
     }
+
+    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+    {
+        MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 0, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+
     PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_0);
     PaintUtilSetSegmentSupportHeight(
         session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
@@ -135,64 +113,22 @@ static void CorkscrewRCTrack25DegUp(
 {
     if (trackElement.HasChain())
     {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16314), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16315), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16316), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16317), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 8, height, session.TrackColours[SCHEME_SUPPORTS]);
-        }
+        PaintAddImageAsParentRotated(
+            session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16314 + direction), { 0, 0, height },
+            { 32, 20, 3 }, { 0, 6, height });
     }
     else
     {
-        switch (direction)
-        {
-            case 0:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16286), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 1:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16287), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 2:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16288), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-            case 3:
-                PaintAddImageAsParentRotated(
-                    session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16289), { 0, 0, height }, { 32, 20, 3 },
-                    { 0, 6, height });
-                break;
-        }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 8, height, session.TrackColours[SCHEME_SUPPORTS]);
-        }
+        PaintAddImageAsParentRotated(
+            session, direction, session.TrackColours[SCHEME_TRACK].WithIndex(16286 + direction), { 0, 0, height },
+            { 32, 20, 3 }, { 0, 6, height });
     }
+
+    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+    {
+        MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 8, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+
     if (direction == 0 || direction == 3)
     {
         PaintUtilPushTunnelRotated(session, direction, height - 8, TUNNEL_1);
@@ -236,10 +172,6 @@ static void CorkscrewRCTrack60DegUp(
                     { 0, 6, height });
                 break;
         }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 32, height, session.TrackColours[SCHEME_SUPPORTS]);
-        }
     }
     else
     {
@@ -266,11 +198,13 @@ static void CorkscrewRCTrack60DegUp(
                     { 0, 6, height });
                 break;
         }
-        if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
-        {
-            MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 32, height, session.TrackColours[SCHEME_SUPPORTS]);
-        }
     }
+
+    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+    {
+        MetalASupportsPaintSetup(session, METAL_SUPPORTS_TUBES, 4, 32, height, session.TrackColours[SCHEME_SUPPORTS]);
+    }
+
     if (direction == 0 || direction == 3)
     {
         PaintUtilPushTunnelRotated(session, direction, height - 8, TUNNEL_1);
