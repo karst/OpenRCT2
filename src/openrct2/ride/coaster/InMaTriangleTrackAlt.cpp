@@ -10,13 +10,18 @@
 #include "../../drawing/Drawing.h"
 #include "../../interface/Viewport.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/MetalSupports.h"
 #include "../../paint/tile_element/Paint.TileElement.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
+#include "../../paint/track/Support.h"
 #include "../../sprites.h"
 #include "../../world/Map.h"
 #include "../RideData.h"
 #include "../TrackData.h"
 #include "../TrackPaint.h"
+
+static constexpr MetalSupportType kSupportType = MetalSupportType::Tubes;
 
 static constexpr uint32_t _InMaTriangleAltBrakeImages[NumOrthogonalDirections][2] = {
     { SPR_G2_GIGA_RC_BRAKE_ALT_OPEN_NE_SW, SPR_G2_GIGA_RC_BRAKE_ALT_CLOSED_NE_SW },
@@ -80,11 +85,11 @@ static void InMaTriangleTrackAltStation(
             session, direction, GetStationColourScheme(session, trackElement).WithIndex(imageIds[direction][1]),
             { 0, 0, height }, { 32, 32, 1 });
     }
-    DrawSupportsSideBySide(session, direction, height, session.SupportColours, MetalSupportType::Tubes);
+    DrawSupportsSideBySide(session, direction, height, session.SupportColours, kSupportType);
     TrackPaintUtilDrawStation2(session, ride, direction, height, trackElement, 9, 11);
-    PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_FLAT);
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void InMaTriangleTrackAltBrakes(
@@ -99,12 +104,12 @@ static void InMaTriangleTrackAltBrakes(
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
         MetalASupportsPaintSetup(
-            session, MetalSupportType::Tubes, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+            session, kSupportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
     }
-    PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_FLAT);
+    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
     PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+        session, PaintUtilRotateSegments(EnumsToFlags(PaintSegment::centre, PaintSegment::topRightSide, PaintSegment::bottomLeftSide), direction), 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void InMaTriangleTrackAltBlockBrakes(
@@ -119,12 +124,12 @@ static void InMaTriangleTrackAltBlockBrakes(
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
         MetalASupportsPaintSetup(
-            session, MetalSupportType::Tubes, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+            session, kSupportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
     }
-    PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_FLAT);
+    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
     PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+        session, PaintUtilRotateSegments(EnumsToFlags(PaintSegment::centre, PaintSegment::topRightSide, PaintSegment::bottomLeftSide), direction), 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void InMaTriangleTrackAltBooster(
@@ -157,12 +162,12 @@ static void InMaTriangleTrackAltBooster(
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
         MetalASupportsPaintSetup(
-            session, MetalSupportType::Tubes, MetalSupportPlace::Centre, 0, height, session.SupportColours);
+            session, kSupportType, MetalSupportPlace::Centre, 0, height, session.SupportColours);
     }
-    PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_FLAT);
+    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
     PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+        session, PaintUtilRotateSegments(EnumsToFlags(PaintSegment::centre, PaintSegment::topRightSide, PaintSegment::bottomLeftSide), direction), 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void InMaTriangleTrackAltPoweredLift(
@@ -176,19 +181,19 @@ static void InMaTriangleTrackAltPoweredLift(
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
         MetalASupportsPaintSetup(
-            session, MetalSupportType::Tubes, MetalSupportPlace::Centre, 8, height, session.SupportColours);
+            session, kSupportType, MetalSupportPlace::Centre, 8, height, session.SupportColours);
     }
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, TUNNEL_SQUARE_7);
+        PaintUtilPushTunnelRotated(session, direction, height - 8, TunnelType::SquareSlopeStart);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, TUNNEL_SQUARE_8);
+        PaintUtilPushTunnelRotated(session, direction, height + 8, TunnelType::SquareSlopeEnd);
     }
     PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 56, 0x20);
+        session, PaintUtilRotateSegments(EnumsToFlags(PaintSegment::centre, PaintSegment::topRightSide, PaintSegment::bottomLeftSide), direction), 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 56);
 }
 
 TRACK_PAINT_FUNCTION GetTrackPaintFunctionInMaTriangleAlt(int32_t trackType)

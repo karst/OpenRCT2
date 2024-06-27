@@ -11,6 +11,7 @@
 
 #include "../Cheats.h"
 #include "../Game.h"
+#include "../GameState.h"
 #include "../audio/audio.h"
 #include "../config/Config.h"
 #include "../interface/Viewport.h"
@@ -34,18 +35,19 @@
 #include "TrackData.h"
 #include "TrackDesign.h"
 
+using namespace OpenRCT2;
 using namespace OpenRCT2::TrackMetaData;
 
 PitchAndRoll TrackPitchAndRollStart(track_type_t trackType)
 {
     const auto& ted = GetTrackElementDescriptor(trackType);
-    return { ted.Definition.vangle_start, ted.Definition.bank_start };
+    return { ted.Definition.PitchStart, ted.Definition.RollStart };
 }
 
 PitchAndRoll TrackPitchAndRollEnd(track_type_t trackType)
 {
     const auto& ted = GetTrackElementDescriptor(trackType);
-    return { ted.Definition.vangle_end, ted.Definition.bank_end };
+    return { ted.Definition.PitchEnd, ted.Definition.RollEnd };
 }
 
 /**
@@ -53,18 +55,16 @@ PitchAndRoll TrackPitchAndRollEnd(track_type_t trackType)
  */
 int32_t TrackIsConnectedByShape(TileElement* a, TileElement* b)
 {
-    int32_t trackType, aBank, aAngle, bBank, bAngle;
-
-    trackType = a->AsTrack()->GetTrackType();
+    auto trackType = a->AsTrack()->GetTrackType();
     const auto* ted = &GetTrackElementDescriptor(trackType);
-    aBank = ted->Definition.bank_end;
-    aAngle = ted->Definition.vangle_end;
+    auto aBank = ted->Definition.RollEnd;
+    auto aAngle = ted->Definition.PitchEnd;
     aBank = TrackGetActualBank(a, aBank);
 
     trackType = b->AsTrack()->GetTrackType();
     ted = &GetTrackElementDescriptor(trackType);
-    bBank = ted->Definition.bank_start;
-    bAngle = ted->Definition.vangle_start;
+    auto bBank = ted->Definition.RollStart;
+    auto bAngle = ted->Definition.PitchStart;
     bBank = TrackGetActualBank(b, bBank);
 
     return aBank == bBank && aAngle == bAngle;
@@ -123,7 +123,7 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
 
     if (ride->GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_HAS_SINGLE_PIECE_STATION))
     {
-        if (ride->num_stations >= OpenRCT2::Limits::MaxStationsPerRide)
+        if (ride->num_stations >= Limits::kMaxStationsPerRide)
         {
             return { false, STR_NO_MORE_STATIONS_ALLOWED_ON_THIS_RIDE };
         }
@@ -192,12 +192,12 @@ ResultWithMessage TrackAddStationElement(CoordsXYZD loc, RideId rideIndex, int32
     // When attempting to place a track design, it sometimes happens that the front and back of station 0 are built,
     // but the middle is not. Allow this, so the track place function can actually finish building all 4 stations.
     // This _might_ cause issues if the track designs is bugged and actually has 5.
-    if (stationBackLoc == stationFrontLoc && ride->num_stations >= OpenRCT2::Limits::MaxStationsPerRide && !fromTrackDesign)
+    if (stationBackLoc == stationFrontLoc && ride->num_stations >= Limits::kMaxStationsPerRide && !fromTrackDesign)
     {
         return { false, STR_NO_MORE_STATIONS_ALLOWED_ON_THIS_RIDE };
     }
 
-    if (stationLength > MAX_STATION_PLATFORM_LENGTH)
+    if (stationLength > kMaxStationPlatformLength)
     {
         return { false, STR_STATION_PLATFORM_TOO_LONG };
     }
@@ -330,7 +330,7 @@ ResultWithMessage TrackRemoveStationElement(const CoordsXYZD& loc, RideId rideIn
     if (!(flags & GAME_COMMAND_FLAG_APPLY))
     {
         if ((removeLoc != stationBackLoc) && (removeLoc != stationFrontLoc)
-            && ride->num_stations >= OpenRCT2::Limits::MaxStationsPerRide)
+            && ride->num_stations >= Limits::kMaxStationsPerRide)
         {
             return { false, STR_NO_MORE_STATIONS_ALLOWED_ON_THIS_RIDE };
         }
@@ -564,7 +564,7 @@ bool TrackElement::IsBlockStart() const
     return false;
 }
 
-roll_type_t TrackGetActualBank(TileElement* tileElement, roll_type_t bank)
+TrackRoll TrackGetActualBank(TileElement* tileElement, TrackRoll bank)
 {
     auto ride = GetRide(tileElement->AsTrack()->GetRideIndex());
     if (ride != nullptr)
@@ -575,30 +575,30 @@ roll_type_t TrackGetActualBank(TileElement* tileElement, roll_type_t bank)
     return bank;
 }
 
-roll_type_t TrackGetActualBank2(int32_t rideType, bool isInverted, roll_type_t bank)
+TrackRoll TrackGetActualBank2(int32_t rideType, bool isInverted, TrackRoll bank)
 {
     if (GetRideTypeDescriptor(rideType).HasFlag(RIDE_TYPE_FLAG_HAS_ALTERNATIVE_TRACK_TYPE))
     {
         if (isInverted)
         {
-            if (bank == TRACK_BANK_NONE)
+            if (bank == TrackRoll::None)
             {
-                bank = TRACK_BANK_UPSIDE_DOWN;
+                bank = TrackRoll::UpsideDown;
             }
-            else if (bank == TRACK_BANK_UPSIDE_DOWN)
+            else if (bank == TrackRoll::UpsideDown)
             {
-                bank = TRACK_BANK_NONE;
+                bank = TrackRoll::None;
             }
         }
     }
     return bank;
 }
 
-roll_type_t TrackGetActualBank3(bool useInvertedSprites, TileElement* tileElement)
+TrackRoll TrackGetActualBank3(bool useInvertedSprites, TileElement* tileElement)
 {
     auto trackType = tileElement->AsTrack()->GetTrackType();
     const auto& ted = GetTrackElementDescriptor(trackType);
-    auto bankStart = ted.Definition.bank_start;
+    auto bankStart = ted.Definition.RollStart;
     auto ride = GetRide(tileElement->AsTrack()->GetRideIndex());
     if (ride == nullptr)
         return bankStart;
@@ -734,6 +734,9 @@ bool TrackTypeIsHelix(track_type_t trackType)
 
 std::optional<CoordsXYZD> GetTrackSegmentOrigin(const CoordsXYE& posEl)
 {
+    if (posEl.element == nullptr)
+        return {};
+
     auto trackEl = posEl.element->AsTrack();
     if (trackEl == nullptr)
         return {};
@@ -945,7 +948,7 @@ void TrackElement::SetBrakeClosed(bool isClosed)
 
 bool TrackElement::IsIndestructible() const
 {
-    return (Flags2 & TRACK_ELEMENT_FLAGS2_INDESTRUCTIBLE_TRACK_PIECE) != 0 && !gCheatsMakeAllDestructible;
+    return (Flags2 & TRACK_ELEMENT_FLAGS2_INDESTRUCTIBLE_TRACK_PIECE) != 0 && !GetGameState().Cheats.MakeAllDestructible;
 }
 
 void TrackElement::SetIsIndestructible(bool isIndestructible)

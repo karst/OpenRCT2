@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "Colour.h"
 #include "Window.h"
 
 #include <list>
@@ -65,7 +66,7 @@ struct WindowBase
     EntityId viewport_target_sprite{ EntityId::GetNull() };
     ScreenCoordsXY savedViewPos{};
     WindowClass classification{};
-    colour_t colours[6]{};
+    ColourWithFlags colours[6]{};
     VisibilityCache visibility{};
     EntityId viewport_smart_follow_sprite{ EntityId::GetNull() }; // Handles setting viewport target sprite etc
 
@@ -79,11 +80,6 @@ struct WindowBase
     virtual ~WindowBase() = default;
 
     WindowBase& operator=(const WindowBase&) = delete;
-
-    virtual bool IsLegacy()
-    {
-        return true;
-    }
 
     // Events
     virtual void OnOpen()
@@ -167,6 +163,9 @@ struct WindowBase
     {
     }
     virtual CursorID OnCursor(WidgetIndex, const ScreenCoordsXY&, CursorID);
+    virtual void OnLanguageChange()
+    {
+    }
 
     void ResizeFrame();
     void ResizeFrameWithPage();

@@ -48,13 +48,10 @@
 #include "world/Park.h"
 #include "world/Scenery.h"
 
-#include <algorithm>
 #include <array>
 #include <vector>
 
 using namespace OpenRCT2;
-
-EditorStep gEditorStep;
 
 namespace Editor
 {
@@ -104,19 +101,24 @@ namespace Editor
      */
     void Load()
     {
-        OpenRCT2::Audio::StopAll();
+        // TODO: replace with dedicated scene
+        auto* context = GetContext();
+        context->SetActiveScene(context->GetGameScene());
+
+        auto& gameState = GetGameState();
+        Audio::StopAll();
         ObjectListLoad();
-        OpenRCT2::GetContext()->GetGameState()->InitAll(DEFAULT_MAP_SIZE);
+        gameStateInitAll(gameState, DEFAULT_MAP_SIZE);
         gScreenFlags = SCREEN_FLAGS_SCENARIO_EDITOR;
-        gEditorStep = EditorStep::ObjectSelection;
-        gParkFlags |= PARK_FLAGS_SHOW_REAL_GUEST_NAMES;
-        gScenarioCategory = SCENARIO_CATEGORY_OTHER;
+        gameState.EditorStep = EditorStep::ObjectSelection;
+        gameState.Park.Flags |= PARK_FLAGS_SHOW_REAL_GUEST_NAMES;
+        gameState.ScenarioCategory = SCENARIO_CATEGORY_OTHER;
         ViewportInitAll();
         WindowBase* mainWindow = OpenEditorWindows();
         mainWindow->SetLocation(TileCoordsXYZ{ 75, 75, 14 }.ToCoordsXYZ());
         LoadPalette();
         gScreenAge = 0;
-        gScenarioName = LanguageGetString(STR_MY_NEW_SCENARIO);
+        gameState.ScenarioName = LanguageGetString(STR_MY_NEW_SCENARIO);
     }
 
     /**
@@ -144,11 +146,12 @@ namespace Editor
             return;
         }
 
-        ScenarioReset();
+        auto& gameState = GetGameState();
+        ScenarioReset(gameState);
 
         gScreenFlags = SCREEN_FLAGS_SCENARIO_EDITOR;
-        gEditorStep = EditorStep::ObjectiveSelection;
-        gScenarioCategory = SCENARIO_CATEGORY_OTHER;
+        gameState.EditorStep = EditorStep::ObjectiveSelection;
+        gameState.ScenarioCategory = SCENARIO_CATEGORY_OTHER;
         ViewportInitAll();
         OpenEditorWindows();
         FinaliseMainView();
@@ -161,15 +164,19 @@ namespace Editor
      */
     void LoadTrackDesigner()
     {
-        OpenRCT2::Audio::StopAll();
+        // TODO: replace with dedicated scene
+        auto* context = GetContext();
+        context->SetActiveScene(context->GetGameScene());
+
+        Audio::StopAll();
         gScreenFlags = SCREEN_FLAGS_TRACK_DESIGNER;
         gScreenAge = 0;
 
         ObjectManagerUnloadAllObjects();
         ObjectListLoad();
-        OpenRCT2::GetContext()->GetGameState()->InitAll(DEFAULT_MAP_SIZE);
+        gameStateInitAll(GetGameState(), DEFAULT_MAP_SIZE);
         SetAllLandOwned();
-        gEditorStep = EditorStep::ObjectSelection;
+        GetGameState().EditorStep = EditorStep::ObjectSelection;
         ViewportInitAll();
         WindowBase* mainWindow = OpenEditorWindows();
         mainWindow->SetLocation(TileCoordsXYZ{ 75, 75, 14 }.ToCoordsXYZ());
@@ -182,15 +189,19 @@ namespace Editor
      */
     void LoadTrackManager()
     {
-        OpenRCT2::Audio::StopAll();
+        // TODO: replace with dedicated scene
+        auto* context = GetContext();
+        context->SetActiveScene(context->GetGameScene());
+
+        Audio::StopAll();
         gScreenFlags = SCREEN_FLAGS_TRACK_MANAGER;
         gScreenAge = 0;
 
         ObjectManagerUnloadAllObjects();
         ObjectListLoad();
-        OpenRCT2::GetContext()->GetGameState()->InitAll(DEFAULT_MAP_SIZE);
+        gameStateInitAll(GetGameState(), DEFAULT_MAP_SIZE);
         SetAllLandOwned();
-        gEditorStep = EditorStep::ObjectSelection;
+        GetGameState().EditorStep = EditorStep::ObjectSelection;
         ViewportInitAll();
         WindowBase* mainWindow = OpenEditorWindows();
         mainWindow->SetLocation(TileCoordsXYZ{ 75, 75, 14 }.ToCoordsXYZ());
@@ -203,8 +214,9 @@ namespace Editor
      */
     static void SetAllLandOwned()
     {
-        MapRange range = { 2 * COORDS_XY_STEP, 2 * COORDS_XY_STEP, (gMapSize.x - 3) * COORDS_XY_STEP,
-                           (gMapSize.y - 3) * COORDS_XY_STEP };
+        auto& gameState = GetGameState();
+        MapRange range = { 2 * COORDS_XY_STEP, 2 * COORDS_XY_STEP, (gameState.MapSize.x - 3) * COORDS_XY_STEP,
+                           (gameState.MapSize.y - 3) * COORDS_XY_STEP };
         auto landSetRightsAction = LandSetRightsAction(range, LandSetRightSetting::SetForSale);
         landSetRightsAction.SetFlags(GAME_COMMAND_FLAG_NO_SPEND);
         GameActions::Execute(&landSetRightsAction);
@@ -243,7 +255,11 @@ namespace Editor
     {
         ClearMapForEditing(loadedFromSave);
 
-        gEditorStep = EditorStep::LandscapeEditor;
+        // TODO: replace with dedicated scene
+        auto* context = GetContext();
+        context->SetActiveScene(context->GetGameScene());
+
+        GetGameState().EditorStep = EditorStep::LandscapeEditor;
         gScreenAge = 0;
         gScreenFlags = SCREEN_FLAGS_SCENARIO_EDITOR;
         ViewportInitAll();
@@ -282,7 +298,10 @@ namespace Editor
             auto importer = ParkImporter::CreateParkFile(context->GetObjectRepository());
             auto loadResult = importer->Load(path);
             objManager.LoadObjects(loadResult.RequiredObjects);
-            importer->Import();
+
+            // TODO: Have a separate GameState and exchange once loaded.
+            auto& gameState = GetGameState();
+            importer->Import(gameState);
 
             AfterLoadCleanup(true);
             return true;
@@ -310,40 +329,42 @@ namespace Editor
             staff->SetName({});
         }
 
+        auto& gameState = GetGameState();
+
         ResetAllEntities();
         UpdateConsolidatedPatrolAreas();
-        gNumGuestsInPark = 0;
-        gNumGuestsHeadingForPark = 0;
-        gNumGuestsInParkLastWeek = 0;
-        gGuestChangeModifier = 0;
+        gameState.NumGuestsInPark = 0;
+        gameState.NumGuestsHeadingForPark = 0;
+        gameState.NumGuestsInParkLastWeek = 0;
+        gameState.GuestChangeModifier = 0;
         if (fromSave)
         {
-            gParkFlags |= PARK_FLAGS_NO_MONEY;
+            gameState.Park.Flags |= PARK_FLAGS_NO_MONEY;
 
-            if (gParkEntranceFee == 0)
+            if (gameState.Park.EntranceFee == 0)
             {
-                gParkFlags |= PARK_FLAGS_PARK_FREE_ENTRY;
+                gameState.Park.Flags |= PARK_FLAGS_PARK_FREE_ENTRY;
             }
             else
             {
-                gParkFlags &= ~PARK_FLAGS_PARK_FREE_ENTRY;
+                gameState.Park.Flags &= ~PARK_FLAGS_PARK_FREE_ENTRY;
             }
 
-            gParkFlags &= ~PARK_FLAGS_SPRITES_INITIALISED;
+            gameState.Park.Flags &= ~PARK_FLAGS_SPRITES_INITIALISED;
 
-            gGuestInitialCash = std::clamp(gGuestInitialCash, 10.00_GBP, MAX_ENTRANCE_FEE);
+            gameState.GuestInitialCash = std::clamp(gameState.GuestInitialCash, 10.00_GBP, MAX_ENTRANCE_FEE);
 
-            gInitialCash = std::min<money64>(gInitialCash, 100000);
+            gameState.InitialCash = std::min<money64>(GetGameState().InitialCash, 100000);
             FinanceResetCashToInitial();
 
-            gBankLoan = std::clamp<money64>(gBankLoan, 0.00_GBP, 5000000.00_GBP);
+            gameState.BankLoan = std::clamp<money64>(gameState.BankLoan, 0.00_GBP, 5000000.00_GBP);
 
-            gMaxBankLoan = std::clamp<money64>(gMaxBankLoan, 0.00_GBP, 5000000.00_GBP);
+            gameState.MaxBankLoan = std::clamp<money64>(gameState.MaxBankLoan, 0.00_GBP, 5000000.00_GBP);
 
-            gBankLoanInterestRate = std::clamp<uint8_t>(gBankLoanInterestRate, 5, MaxBankLoanInterestRate);
+            gameState.BankLoanInterestRate = std::clamp<uint8_t>(gameState.BankLoanInterestRate, 5, MaxBankLoanInterestRate);
         }
 
-        ClimateReset(gClimate);
+        ClimateReset(gameState.Climate);
 
         News::InitQueue();
     }
@@ -359,7 +380,7 @@ namespace Editor
             return;
         }
 
-        switch (gEditorStep)
+        switch (GetGameState().EditorStep)
         {
             case EditorStep::ObjectSelection:
                 if (WindowFindByClass(WindowClass::EditorObjectSelection) != nullptr)
@@ -415,7 +436,8 @@ namespace Editor
     static void FinaliseMainView()
     {
         auto windowManager = GetContext()->GetUiContext()->GetWindowManager();
-        windowManager->SetMainView(gSavedView, gSavedViewZoom, gSavedViewRotation);
+        auto& gameState = GetGameState();
+        windowManager->SetMainView(gameState.SavedView, gameState.SavedViewZoom, gameState.SavedViewRotation);
 
         ResetAllSpriteQuadrantPlacements();
         ScenerySetDefaultPlacementConfiguration();
@@ -492,18 +514,19 @@ namespace Editor
      */
     ResultWithMessage CheckPark()
     {
-        int32_t parkSize = ParkCalculateSize();
+        auto& gameState = GetGameState();
+        int32_t parkSize = Park::UpdateSize(gameState);
         if (parkSize == 0)
         {
             return { false, STR_PARK_MUST_OWN_SOME_LAND };
         }
 
-        if (gParkEntrances.empty())
+        if (gameState.Park.Entrances.empty())
         {
             return { false, STR_NO_PARK_ENTRANCES };
         }
 
-        for (const auto& parkEntrance : gParkEntrances)
+        for (const auto& parkEntrance : gameState.Park.Entrances)
         {
             int32_t direction = DirectionReverse(parkEntrance.direction);
 
@@ -521,7 +544,7 @@ namespace Editor
             }
         }
 
-        if (gPeepSpawns.empty())
+        if (gameState.PeepSpawns.empty())
         {
             return { false, STR_PEEP_SPAWNS_NOT_SET };
         }
@@ -554,7 +577,7 @@ namespace Editor
     {
         if (index != OBJECT_ENTRY_INDEX_NULL)
         {
-            assert(static_cast<int32_t>(objectType) < object_entry_group_counts[EnumValue(ObjectType::Paths)]);
+            assert(static_cast<size_t>(objectType) < getObjectEntryGroupCount(ObjectType::Paths));
             auto& list = _editorSelectedObjectFlags[EnumValue(objectType)];
             if (list.size() <= index)
             {

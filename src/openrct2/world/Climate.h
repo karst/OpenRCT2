@@ -70,10 +70,6 @@ struct ClimateState
     WeatherLevel Level;
 };
 
-extern ClimateType gClimate;
-extern ClimateState gClimateCurrent;
-extern ClimateState gClimateNext;
-extern uint16_t gClimateUpdateTimer;
 extern uint16_t gClimateLightningFlash;
 
 int32_t ClimateCelsiusToFahrenheit(int32_t celsius);
@@ -85,6 +81,7 @@ void ClimateForceWeather(WeatherType weather);
 
 bool ClimateIsRaining();
 bool ClimateIsSnowing();
+bool ClimateIsSnowingHeavily();
 bool WeatherIsDry(WeatherType);
 FilterPaletteID ClimateGetWeatherGloomPaletteId(const ClimateState& state);
 uint32_t ClimateGetWeatherSpriteId(const ClimateState& state);

@@ -9,6 +9,8 @@
 
 #include "ClimateSetAction.h"
 
+#include "../GameState.h"
+
 ClimateSetAction::ClimateSetAction(ClimateType climate)
     : _climate(climate)
 {
@@ -35,7 +37,8 @@ GameActions::Result ClimateSetAction::Query() const
 {
     if (_climate >= ClimateType::Count)
     {
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_INVALID_CLIMATE_ID, STR_NONE);
+        LOG_ERROR("Invalid climate type %u", _climate);
+        return GameActions::Result(GameActions::Status::InvalidParameters, STR_INVALID_CLIMATE_ID, STR_ERR_VALUE_OUT_OF_RANGE);
     }
 
     return GameActions::Result();
@@ -43,7 +46,7 @@ GameActions::Result ClimateSetAction::Query() const
 
 GameActions::Result ClimateSetAction::Execute() const
 {
-    gClimate = ClimateType{ _climate };
+    ClimateReset(_climate);
 
     GfxInvalidateScreen();
 

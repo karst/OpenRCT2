@@ -11,26 +11,27 @@
 
 #include "../Context.h"
 #include "../Game.h"
+#include "../GameState.h"
 #include "../common.h"
 #include "../core/Guard.hpp"
 #include "../core/Imaging.h"
 #include "../core/String.hpp"
 #include "../localisation/Localisation.h"
 #include "../localisation/StringIds.h"
-#include "../object/Object.h"
 #include "../object/ObjectEntryManager.h"
+#include "../object/ObjectList.h"
 #include "../object/ObjectManager.h"
 #include "../object/SmallSceneryEntry.h"
 #include "../object/TerrainEdgeObject.h"
 #include "../object/TerrainSurfaceObject.h"
 #include "../platform/Platform.h"
 #include "../util/Util.h"
+#include "../world/tile_element/Slope.h"
 #include "Map.h"
 #include "MapHelpers.h"
 #include "Scenery.h"
 #include "Surface.h"
 
-#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <iterator>
@@ -310,7 +311,7 @@ static void MapGenPlaceTrees()
     std::vector<int32_t> desertTreeIds;
     std::vector<int32_t> snowTreeIds;
 
-    for (int32_t i = 0; i < object_entry_group_counts[EnumValue(ObjectType::SmallScenery)]; i++)
+    for (auto i = 0u; i < getObjectEntryGroupCount(ObjectType::SmallScenery); i++)
     {
         auto* sceneryEntry = OpenRCT2::ObjectManager::GetObjectEntry<SmallSceneryEntry>(i);
         auto entry = ObjectEntryGetObject(ObjectType::SmallScenery, i);
@@ -335,9 +336,10 @@ static void MapGenPlaceTrees()
     // Place trees
     CoordsXY pos;
     float treeToLandRatio = (10 + (UtilRand() % 30)) / 100.0f;
-    for (int32_t y = 1; y < gMapSize.y - 1; y++)
+    auto& gameState = OpenRCT2::GetGameState();
+    for (int32_t y = 1; y < gameState.MapSize.y - 1; y++)
     {
-        for (int32_t x = 1; x < gMapSize.x - 1; x++)
+        for (int32_t x = 1; x < gameState.MapSize.x - 1; x++)
         {
             pos.x = x * COORDS_XY_STEP;
             pos.y = y * COORDS_XY_STEP;
@@ -366,8 +368,8 @@ static void MapGenPlaceTrees()
                         // Get map coord, clamped to the edges
                         const auto offset = CoordsXY{ offsetX * COORDS_XY_STEP, offsetY * COORDS_XY_STEP };
                         auto neighbourPos = pos + offset;
-                        neighbourPos.x = std::clamp(neighbourPos.x, COORDS_XY_STEP, COORDS_XY_STEP * (gMapSize.x - 1));
-                        neighbourPos.y = std::clamp(neighbourPos.y, COORDS_XY_STEP, COORDS_XY_STEP * (gMapSize.y - 1));
+                        neighbourPos.x = std::clamp(neighbourPos.x, COORDS_XY_STEP, COORDS_XY_STEP * (gameState.MapSize.x - 1));
+                        neighbourPos.y = std::clamp(neighbourPos.y, COORDS_XY_STEP, COORDS_XY_STEP * (gameState.MapSize.y - 1));
 
                         const auto neighboutSurface = MapGetSurfaceElementAt(neighbourPos);
                         if (neighboutSurface != nullptr && neighboutSurface->GetWaterHeight() > 0)
@@ -415,9 +417,10 @@ static void MapGenPlaceTrees()
  */
 static void MapGenSetWaterLevel(int32_t waterLevel)
 {
-    for (int32_t y = 1; y < gMapSize.y - 1; y++)
+    auto& gameState = OpenRCT2::GetGameState();
+    for (int32_t y = 1; y < gameState.MapSize.y - 1; y++)
     {
-        for (int32_t x = 1; x < gMapSize.x - 1; x++)
+        for (int32_t x = 1; x < gameState.MapSize.x - 1; x++)
         {
             auto surfaceElement = MapGetSurfaceElementAt(TileCoordsXY{ x, y });
             if (surfaceElement != nullptr && surfaceElement->BaseHeight < waterLevel)
@@ -494,13 +497,13 @@ static void MapGenSetHeight(MapGenSettings* settings)
             uint8_t currentSlope = surfaceElement->GetSlope();
 
             if (q00 > baseHeight)
-                currentSlope |= TILE_ELEMENT_SLOPE_S_CORNER_UP;
+                currentSlope |= kTileSlopeSCornerUp;
             if (q01 > baseHeight)
-                currentSlope |= TILE_ELEMENT_SLOPE_W_CORNER_UP;
+                currentSlope |= kTileSlopeWCornerUp;
             if (q10 > baseHeight)
-                currentSlope |= TILE_ELEMENT_SLOPE_E_CORNER_UP;
+                currentSlope |= kTileSlopeECornerUp;
             if (q11 > baseHeight)
-                currentSlope |= TILE_ELEMENT_SLOPE_N_CORNER_UP;
+                currentSlope |= kTileSlopeNCornerUp;
 
             surfaceElement->SetSlope(currentSlope);
         }
@@ -690,8 +693,8 @@ bool MapGenLoadHeightmap(const utf8* path)
     try
     {
         auto image = Imaging::ReadFromFile(path, format);
-        auto width = std::min<uint32_t>(image.Width, MAXIMUM_MAP_SIZE_PRACTICAL);
-        auto height = std::min<uint32_t>(image.Height, MAXIMUM_MAP_SIZE_PRACTICAL);
+        auto width = std::min<uint32_t>(image.Width, kMaximumMapSizePractical);
+        auto height = std::min<uint32_t>(image.Height, kMaximumMapSizePractical);
         if (width != image.Width || height != image.Height)
         {
             ContextShowError(STR_HEIGHT_MAP_ERROR, STR_ERROR_HEIHGT_MAP_TOO_BIG, {});

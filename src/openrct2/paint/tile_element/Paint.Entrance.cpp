@@ -29,8 +29,9 @@
 #include "../../world/Footpath.h"
 #include "../../world/Park.h"
 #include "../../world/TileInspector.h"
-#include "../Supports.h"
+#include "../support/WoodenSupports.h"
 #include "Paint.TileElement.h"
+#include "Segment.h"
 
 using namespace OpenRCT2;
 
@@ -62,7 +63,7 @@ static void PaintRideEntranceExitScrollingText(
     }
 
     char text[256];
-    if (gConfigGeneral.UpperCaseBanners)
+    if (Config::Get().general.UpperCaseBanners)
     {
         FormatStringToUpper(text, sizeof(text), STR_BANNER_TEXT_FORMAT, ft.Data());
     }
@@ -71,7 +72,7 @@ static void PaintRideEntranceExitScrollingText(
         FormatStringLegacy(text, sizeof(text), STR_BANNER_TEXT_FORMAT, ft.Data());
     }
     auto stringWidth = GfxGetStringWidth(text, FontStyle::Tiny);
-    auto scroll = stringWidth > 0 ? (gCurrentTicks / 2) % stringWidth : 0;
+    auto scroll = stringWidth > 0 ? (GetGameState().CurrentTicks / 2) % stringWidth : 0;
 
     PaintAddImageAsChild(
         session, ScrollingTextSetup(session, STR_BANNER_TEXT_FORMAT, ft, scroll, stationObj.ScrollingMode, COLOUR_BLACK),
@@ -189,7 +190,7 @@ static void PaintRideEntranceExit(PaintSession& session, uint8_t direction, int3
             { { (direction & 1) ? 28 : 2, (direction & 1) ? 2 : 28, height }, boundBoxLength });
     }
 
-    PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_FLAT);
+    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
 
     if (!entranceEl.IsGhost())
         PaintRideEntranceExitScrollingText(session, entranceEl, *stationObj, direction, height);
@@ -203,8 +204,8 @@ static void PaintRideEntranceExit(PaintSession& session, uint8_t direction, int3
         session, WoodenSupportType::Truss, WoodenSupportSubType::NeSw, direction, height, supportsImageTemplate);
 
     height += isExit ? 40 : 56;
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height);
 }
 
 static void PaintParkEntranceScrollingText(
@@ -220,9 +221,9 @@ static void PaintParkEntranceScrollingText(
         return;
 
     auto ft = Formatter();
-    if (gParkFlags & PARK_FLAGS_PARK_OPEN)
+    if (GetGameState().Park.Flags & PARK_FLAGS_PARK_OPEN)
     {
-        const auto& park = OpenRCT2::GetContext()->GetGameState()->GetPark();
+        const auto& park = OpenRCT2::GetGameState().Park;
         auto name = park.Name.c_str();
         ft.Add<StringId>(STR_STRING);
         ft.Add<const char*>(name);
@@ -234,7 +235,7 @@ static void PaintParkEntranceScrollingText(
     }
 
     char text[256];
-    if (gConfigGeneral.UpperCaseBanners)
+    if (Config::Get().general.UpperCaseBanners)
     {
         FormatStringToUpper(text, sizeof(text), STR_BANNER_TEXT_FORMAT, ft.Data());
     }
@@ -244,7 +245,7 @@ static void PaintParkEntranceScrollingText(
     }
 
     auto stringWidth = GfxGetStringWidth(text, FontStyle::Tiny);
-    auto scroll = stringWidth > 0 ? (gCurrentTicks / 2) % stringWidth : 0;
+    auto scroll = stringWidth > 0 ? (GetGameState().CurrentTicks / 2) % stringWidth : 0;
     auto imageIndex = ScrollingTextSetup(
         session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode + direction / 2, COLOUR_BLACK);
     auto textHeight = height + entrance.GetTextHeight();
@@ -331,8 +332,8 @@ static void PaintParkEntrance(PaintSession& session, uint8_t direction, int32_t 
     WoodenASupportsPaintSetupRotated(
         session, WoodenSupportType::Truss, WoodenSupportSubType::NeSw, direction, height, supportsImageTemplate);
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 80, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 80);
 }
 
 static void PaintHeightMarkers(PaintSession& session, const EntranceElement& entranceEl, int32_t height)
@@ -347,7 +348,7 @@ static void PaintHeightMarkers(PaintSession& session, const EntranceElement& ent
             ImageIndex baseImageIndex = SPR_HEIGHT_MARKER_BASE;
             baseImageIndex += heightMarkerBaseZ / 16;
             baseImageIndex += GetHeightMarkerOffset();
-            baseImageIndex -= gMapBaseZ;
+            baseImageIndex -= kMapBaseZ;
             auto imageId = ImageId(baseImageIndex, COLOUR_GREY);
             PaintAddImageAsParent(session, imageId, { 16, 16, height }, { { 31, 31, heightMarkerBaseZ + 64 }, { 1, 1, 0 } });
         }

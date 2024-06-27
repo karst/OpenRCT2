@@ -10,11 +10,13 @@
 #include "../Paint.h"
 
 #include "../../Game.h"
+#include "../../GameState.h"
 #include "../../config/Config.h"
 #include "../../interface/Viewport.h"
 #include "../../localisation/Formatter.h"
 #include "../../localisation/Formatting.h"
 #include "../../localisation/Localisation.h"
+#include "../../localisation/StringIds.h"
 #include "../../object/BannerObject.h"
 #include "../../object/ObjectEntryManager.h"
 #include "../../profiling/Profiling.h"
@@ -24,6 +26,8 @@
 #include "../../world/Scenery.h"
 #include "../../world/TileInspector.h"
 #include "Paint.TileElement.h"
+
+using namespace OpenRCT2;
 
 // BannerBoundBoxes[rotation][0] is for the pole in the back
 // BannerBoundBoxes[rotation][1] is for the pole and the banner in the front
@@ -46,7 +50,7 @@ static void PaintBannerScrollingText(
         return;
 
     auto scrollingMode = bannerEntry.scrolling_mode + (direction & 3);
-    if (scrollingMode >= MAX_SCROLLING_TEXT_MODES)
+    if (scrollingMode >= kMaxScrollingTextModes)
     {
         return;
     }
@@ -55,7 +59,7 @@ static void PaintBannerScrollingText(
     banner.FormatTextTo(ft, true);
 
     char text[256];
-    if (gConfigGeneral.UpperCaseBanners)
+    if (Config::Get().general.UpperCaseBanners)
     {
         FormatStringToUpper(text, sizeof(text), STR_BANNER_TEXT_FORMAT, ft.Data());
     }
@@ -65,7 +69,7 @@ static void PaintBannerScrollingText(
     }
 
     auto stringWidth = GfxGetStringWidth(text, FontStyle::Tiny);
-    auto scroll = (gCurrentTicks / 2) % stringWidth;
+    auto scroll = stringWidth > 0 ? (GetGameState().CurrentTicks / 2) % stringWidth : 0;
     auto imageId = ScrollingTextSetup(session, STR_BANNER_TEXT_FORMAT, ft, scroll, scrollingMode, COLOUR_BLACK);
     PaintAddImageAsChild(session, imageId, { 0, 0, height + 22 }, { bbOffset, { 1, 1, 21 } });
 }

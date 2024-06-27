@@ -12,6 +12,7 @@
 #include "Context.h"
 #include "Editor.h"
 #include "Game.h"
+#include "GameState.h"
 #include "OpenRCT2.h"
 #include "drawing/Drawing.h"
 #include "localisation/Formatter.h"
@@ -35,7 +36,7 @@
 
 std::optional<StringId> _gSceneryGroupPartialSelectError;
 std::vector<uint8_t> _objectSelectionFlags;
-int32_t _numSelectedObjectsForType[EnumValue(ObjectType::Count)];
+uint32_t _numSelectedObjectsForType[EnumValue(ObjectType::Count)];
 static int32_t _numAvailableObjectsForType[EnumValue(ObjectType::Count)];
 
 static void SetupInUseSelectionFlags();
@@ -124,9 +125,9 @@ void SetupInUseSelectionFlags()
 {
     auto& objectMgr = OpenRCT2::GetContext()->GetObjectManager();
 
-    for (auto objectType : TransientObjectTypes)
+    for (auto objectType : getTransientObjectTypes())
     {
-        for (int32_t i = 0; i < object_entry_group_counts[EnumValue(objectType)]; i++)
+        for (auto i = 0u; i < getObjectEntryGroupCount(objectType); i++)
         {
             Editor::ClearSelectedObject(static_cast<ObjectType>(objectType), i, ObjectSelectionFlags::AllFlags);
 
@@ -479,18 +480,27 @@ void ResetSelectedObjectCountAndSize()
 
 void FinishObjectSelection()
 {
+    auto& gameState = OpenRCT2::GetGameState();
     if (gScreenFlags & SCREEN_FLAGS_TRACK_DESIGNER)
     {
         SetEveryRideTypeInvented();
         SetEveryRideEntryInvented();
-        gEditorStep = EditorStep::RollercoasterDesigner;
+
+        auto& objManager = OpenRCT2::GetContext()->GetObjectManager();
+        gameState.LastEntranceStyle = objManager.GetLoadedObjectEntryIndex("rct2.station.plain");
+        if (gameState.LastEntranceStyle == OBJECT_ENTRY_INDEX_NULL)
+        {
+            gameState.LastEntranceStyle = 0;
+        }
+
+        gameState.EditorStep = EditorStep::RollercoasterDesigner;
         GfxInvalidateScreen();
     }
     else
     {
         SetAllSceneryItemsInvented();
         ScenerySetDefaultPlacementConfiguration();
-        gEditorStep = EditorStep::LandscapeEditor;
+        gameState.EditorStep = EditorStep::LandscapeEditor;
         GfxInvalidateScreen();
     }
 }
@@ -570,7 +580,7 @@ ResultWithMessage WindowEditorObjectSelectionSelectObject(
     }
 
     ObjectType objectType = item->Type;
-    uint16_t maxObjects = object_entry_group_counts[EnumValue(objectType)];
+    auto maxObjects = getObjectEntryGroupCount(objectType);
 
     if (maxObjects <= _numSelectedObjectsForType[EnumValue(objectType)])
     {

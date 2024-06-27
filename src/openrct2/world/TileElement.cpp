@@ -18,6 +18,7 @@
 #include "Banner.h"
 #include "Location.hpp"
 #include "Scenery.h"
+#include "tile_element/Slope.h"
 
 bool TileElementIsUnderground(TileElement* tileElement)
 {
@@ -107,8 +108,8 @@ void TileElement::ClearAs(TileElementType newType)
     Type = 0;
     SetType(newType);
     Flags = 0;
-    BaseHeight = MINIMUM_LAND_HEIGHT;
-    ClearanceHeight = MINIMUM_LAND_HEIGHT;
+    BaseHeight = kMinimumLandHeight;
+    ClearanceHeight = kMinimumLandHeight;
     Owner = 0;
     std::fill_n(Pad05, sizeof(Pad05), 0x00);
     std::fill_n(Pad08, sizeof(Pad08), 0x00);

@@ -9,14 +9,14 @@
 
 #pragma once
 
-#include "../common.h"
+#include "../core/Money.hpp"
 #include "Location.hpp"
 #include "ScenerySelection.h"
 
 #include <vector>
 
-#define SCENERY_WITHER_AGE_THRESHOLD_1 0x28
-#define SCENERY_WITHER_AGE_THRESHOLD_2 0x37
+constexpr uint8_t kSceneryWitherAgeThreshold1 = 0x28;
+constexpr uint8_t kSceneryWitherAgeThreshold2 = 0x37;
 
 enum
 {
@@ -84,6 +84,8 @@ void ClearRestrictedScenery();
 void RestrictAllMiscScenery();
 void MarkAllUnrestrictedSceneryAsInvented();
 std::vector<ScenerySelection>& GetRestrictedScenery();
+void SetSceneryItemRestricted(const ScenerySelection& item, bool on);
+bool ObjectTypeCanBeRestricted(ObjectType objectType);
 
 ObjectType GetObjectTypeFromSceneryType(uint8_t type);
 uint8_t GetSceneryTypeFromObjectType(ObjectType type);

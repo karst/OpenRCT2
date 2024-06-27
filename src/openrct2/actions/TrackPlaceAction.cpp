@@ -9,6 +9,7 @@
 
 #include "TrackPlaceAction.h"
 
+#include "../GameState.h"
 #include "../core/Numerics.hpp"
 #include "../management/Finance.h"
 #include "../ride/RideData.h"
@@ -19,8 +20,10 @@
 #include "../world/ConstructionClearance.h"
 #include "../world/MapAnimation.h"
 #include "../world/Surface.h"
+#include "../world/tile_element/Slope.h"
 #include "RideSetSettingAction.h"
 
+using namespace OpenRCT2;
 using namespace OpenRCT2::TrackMetaData;
 
 TrackPlaceAction::TrackPlaceAction(
@@ -70,26 +73,26 @@ GameActions::Result TrackPlaceAction::Query() const
     auto ride = GetRide(_rideIndex);
     if (ride == nullptr)
     {
-        LOG_WARNING("Invalid ride for track placement, rideIndex = %d", _rideIndex.ToUnderlying());
+        LOG_ERROR("Ride not found for rideIndex %d", _rideIndex.ToUnderlying());
         return GameActions::Result(
-            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_ERR_RIDE_NOT_FOUND);
     }
     const auto* rideEntry = GetRideEntryByIndex(ride->subtype);
     if (rideEntry == nullptr)
     {
-        LOG_WARNING("Invalid ride subtype for track placement, rideIndex = %d", _rideIndex.ToUnderlying());
+        LOG_ERROR("Invalid ride subtype for track placement, rideIndex = %d", _rideIndex.ToUnderlying());
         return GameActions::Result(
             GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_UNKNOWN_OBJECT_TYPE);
     }
 
     if (!DirectionValid(_origin.direction))
     {
-        LOG_WARNING("Invalid direction for track placement, direction = %d", _origin.direction);
+        LOG_ERROR("Invalid direction for track placement, direction = %d", _origin.direction);
         return GameActions::Result(
-            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_ERR_VALUE_OUT_OF_RANGE);
     }
 
-    if (_rideType != ride->type && !gCheatsAllowArbitraryRideTypeChanges)
+    if (_rideType != ride->type && !GetGameState().Cheats.AllowArbitraryRideTypeChanges)
     {
         return GameActions::Result(
             GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
@@ -97,9 +100,16 @@ GameActions::Result TrackPlaceAction::Query() const
 
     if (_rideType > RIDE_TYPE_COUNT)
     {
-        LOG_WARNING("Invalid ride type for track placement, rideType = %d", _rideType);
+        LOG_ERROR("Invalid ride type for track placement, rideType = %d", _rideType);
         return GameActions::Result(
-            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_ERR_VALUE_OUT_OF_RANGE);
+    }
+
+    if (_brakeSpeed > kMaximumTrackSpeed)
+    {
+        LOG_WARNING("Invalid speed for track placement, speed = %d", _brakeSpeed);
+        return GameActions::Result(
+            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_SPEED_TOO_HIGH);
     }
 
     auto res = GameActions::Result();
@@ -120,7 +130,7 @@ GameActions::Result TrackPlaceAction::Query() const
 
     if (!(GetActionFlags() & GameActions::Flags::AllowWhilePaused))
     {
-        if (GameIsPaused() && !gCheatsBuildInPauseMode)
+        if (GameIsPaused() && !GetGameState().Cheats.BuildInPauseMode)
         {
             return GameActions::Result(
                 GameActions::Status::Disallowed, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
@@ -150,7 +160,8 @@ GameActions::Result TrackPlaceAction::Query() const
         }
         // Backwards steep lift hills are allowed, even on roller coasters that do not support forwards steep lift hills.
         if ((_trackPlaceFlags & CONSTRUCTION_LIFT_HILL_SELECTED)
-            && !ride->GetRideTypeDescriptor().SupportsTrackPiece(TRACK_LIFT_HILL_STEEP) && !gCheatsEnableChainLiftOnAllTrack)
+            && !ride->GetRideTypeDescriptor().SupportsTrackPiece(TRACK_LIFT_HILL_STEEP)
+            && !GetGameState().Cheats.EnableChainLiftOnAllTrack)
         {
             const auto& ted = GetTrackElementDescriptor(_trackType);
             if (ted.Flags & TRACK_ELEM_FLAG_IS_STEEP_UP)
@@ -171,7 +182,12 @@ GameActions::Result TrackPlaceAction::Query() const
         auto rotatedTrack = CoordsXYZ{ CoordsXY{ trackBlock->x, trackBlock->y }.Rotate(_origin.direction), 0 };
         auto tileCoords = CoordsXYZ{ _origin.x, _origin.y, _origin.z } + rotatedTrack;
 
-        if (!LocationValid(tileCoords) || (!MapIsLocationOwned(tileCoords) && !gCheatsSandboxMode))
+        if (!LocationValid(tileCoords))
+        {
+            return GameActions::Result(
+                GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_OFF_EDGE_OF_MAP);
+        }
+        if (!MapIsLocationOwned(tileCoords) && !GetGameState().Cheats.SandboxMode)
         {
             return GameActions::Result(
                 GameActions::Status::Disallowed, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_LAND_NOT_OWNED_BY_PARK);
@@ -181,13 +197,13 @@ GameActions::Result TrackPlaceAction::Query() const
 
     if (!CheckMapCapacity(numElements))
     {
-        LOG_WARNING("Not enough free map elements to place track.");
+        LOG_ERROR("Not enough free map elements to place track.");
         return GameActions::Result(
             GameActions::Status::NoFreeElements, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
             STR_TILE_ELEMENT_LIMIT_REACHED);
     }
 
-    if (!gCheatsAllowTrackPlaceInvalidHeights)
+    if (!GetGameState().Cheats.AllowTrackPlaceInvalidHeights)
     {
         if (ted.Flags & TRACK_ELEM_FLAG_STARTS_AT_HALF_HEIGHT)
         {
@@ -227,7 +243,7 @@ GameActions::Result TrackPlaceAction::Query() const
 
         int32_t baseZ = Floor2(mapLoc.z, COORDS_Z_STEP);
 
-        int32_t clearanceZ = trackBlock->var_07;
+        int32_t clearanceZ = trackBlock->ClearanceZ;
         if (trackBlock->flags & RCT_PREVIEW_TRACK_FLAG_IS_VERTICAL && clearanceHeight > 24)
         {
             clearanceZ += 24;
@@ -245,10 +261,10 @@ GameActions::Result TrackPlaceAction::Query() const
                 GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_TOO_HIGH);
         }
 
-        uint8_t crossingMode = (ride->GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_SUPPORTS_LEVEL_CROSSINGS)
-                                && _trackType == TrackElemType::Flat)
-            ? CREATE_CROSSING_MODE_TRACK_OVER_PATH
-            : CREATE_CROSSING_MODE_NONE;
+        auto crossingMode = (ride->GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_SUPPORTS_LEVEL_CROSSINGS)
+                             && _trackType == TrackElemType::Flat)
+            ? CreateCrossingMode::trackOverPath
+            : CreateCrossingMode::none;
         auto canBuild = MapCanConstructWithClearAt(
             { mapLoc, baseZ, clearanceZ }, &MapPlaceNonSceneryClearFunc, quarterTile, GetFlags(), crossingMode);
         if (canBuild.Error != GameActions::Status::Ok)
@@ -260,11 +276,14 @@ GameActions::Result TrackPlaceAction::Query() const
 
         const auto clearanceData = canBuild.GetData<ConstructClearResult>();
         uint8_t mapGroundFlags = clearanceData.GroundFlags & (ELEMENT_IS_ABOVE_GROUND | ELEMENT_IS_UNDERGROUND);
-        if (resultData.GroundFlags != 0 && (resultData.GroundFlags & mapGroundFlags) == 0)
+        if (!(ted.Flags & TRACK_ELEM_FLAG_CAN_BE_PARTLY_UNDERGROUND))
         {
-            return GameActions::Result(
-                GameActions::Status::Disallowed, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
-                STR_CANT_BUILD_PARTLY_ABOVE_AND_PARTLY_BELOW_GROUND);
+            if (resultData.GroundFlags != 0 && (resultData.GroundFlags & mapGroundFlags) == 0)
+            {
+                return GameActions::Result(
+                    GameActions::Status::Disallowed, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
+                    STR_CANT_BUILD_PARTLY_ABOVE_AND_PARTLY_BELOW_GROUND);
+            }
         }
 
         resultData.GroundFlags = mapGroundFlags;
@@ -288,7 +307,7 @@ GameActions::Result TrackPlaceAction::Query() const
             }
         }
 
-        if (clearanceData.GroundFlags & ELEMENT_IS_UNDERWATER && !gCheatsDisableClearanceChecks)
+        if (clearanceData.GroundFlags & ELEMENT_IS_UNDERWATER && !GetGameState().Cheats.DisableClearanceChecks)
         {
             return GameActions::Result(
                 GameActions::Status::Disallowed, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
@@ -301,7 +320,8 @@ GameActions::Result TrackPlaceAction::Query() const
             if (surfaceElement == nullptr)
             {
                 return GameActions::Result(
-                    GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+                    GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
+                    STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
             }
 
             auto waterHeight = surfaceElement->GetWaterHeight();
@@ -321,9 +341,9 @@ GameActions::Result TrackPlaceAction::Query() const
             waterHeight -= LAND_HEIGHT_STEP;
             if (waterHeight == surfaceElement->GetBaseZ())
             {
-                uint8_t slope = surfaceElement->GetSlope() & TILE_ELEMENT_SLOPE_ALL_CORNERS_UP;
-                if (slope == TILE_ELEMENT_SLOPE_W_CORNER_DN || slope == TILE_ELEMENT_SLOPE_S_CORNER_DN
-                    || slope == TILE_ELEMENT_SLOPE_E_CORNER_DN || slope == TILE_ELEMENT_SLOPE_N_CORNER_DN)
+                uint8_t slope = surfaceElement->GetSlope() & kTileSlopeRaisedCornersMask;
+                if (slope == kTileSlopeWCornerDown || slope == kTileSlopeSCornerDown || slope == kTileSlopeECornerDown
+                    || slope == kTileSlopeNCornerDown)
                 {
                     return GameActions::Result(
                         GameActions::Status::Disallowed, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
@@ -348,10 +368,12 @@ GameActions::Result TrackPlaceAction::Query() const
         auto surfaceElement = MapGetSurfaceElementAt(mapLoc);
         if (surfaceElement == nullptr)
         {
-            return GameActions::Result(GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+            return GameActions::Result(
+                GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
+                STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
         }
 
-        if (!gCheatsDisableSupportLimits)
+        if (!GetGameState().Cheats.DisableSupportLimits)
         {
             int32_t ride_height = clearanceZ - surfaceElement->GetBaseZ();
             if (ride_height >= 0)
@@ -402,15 +424,15 @@ GameActions::Result TrackPlaceAction::Execute() const
     auto ride = GetRide(_rideIndex);
     if (ride == nullptr)
     {
-        LOG_WARNING("Invalid ride for track placement, rideIndex = %d", _rideIndex.ToUnderlying());
+        LOG_ERROR("Invalid ride for track placement, rideIndex = %d", _rideIndex.ToUnderlying());
         return GameActions::Result(
-            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_ERR_RIDE_NOT_FOUND);
     }
 
     const auto* rideEntry = GetRideEntryByIndex(ride->subtype);
     if (rideEntry == nullptr)
     {
-        LOG_WARNING("Invalid ride subtype for track placement, rideIndex = %d", _rideIndex.ToUnderlying());
+        LOG_ERROR("Invalid ride subtype for track placement, rideIndex = %d", _rideIndex.ToUnderlying());
         return GameActions::Result(
             GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_UNKNOWN_OBJECT_TYPE);
     }
@@ -442,7 +464,7 @@ GameActions::Result TrackPlaceAction::Execute() const
         auto quarterTile = trackBlock->var_08.Rotate(_origin.direction);
 
         int32_t baseZ = Floor2(mapLoc.z, COORDS_Z_STEP);
-        int32_t clearanceZ = trackBlock->var_07;
+        int32_t clearanceZ = trackBlock->ClearanceZ;
         if (trackBlock->flags & RCT_PREVIEW_TRACK_FLAG_IS_VERTICAL && clearanceHeight > 24)
         {
             clearanceZ += 24;
@@ -455,10 +477,10 @@ GameActions::Result TrackPlaceAction::Execute() const
         clearanceZ = Floor2(clearanceZ, COORDS_Z_STEP) + baseZ;
         const auto mapLocWithClearance = CoordsXYRangedZ(mapLoc, baseZ, clearanceZ);
 
-        uint8_t crossingMode = (ride->GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_SUPPORTS_LEVEL_CROSSINGS)
-                                && _trackType == TrackElemType::Flat)
-            ? CREATE_CROSSING_MODE_TRACK_OVER_PATH
-            : CREATE_CROSSING_MODE_NONE;
+        auto crossingMode = (ride->GetRideTypeDescriptor().HasFlag(RIDE_TYPE_FLAG_SUPPORTS_LEVEL_CROSSINGS)
+                             && _trackType == TrackElemType::Flat)
+            ? CreateCrossingMode::trackOverPath
+            : CreateCrossingMode::none;
         auto canBuild = MapCanConstructWithClearAt(
             mapLocWithClearance, &MapPlaceNonSceneryClearFunc, quarterTile, GetFlags() | GAME_COMMAND_FLAG_APPLY, crossingMode);
         if (canBuild.Error != GameActions::Status::Ok)
@@ -469,7 +491,7 @@ GameActions::Result TrackPlaceAction::Execute() const
         costs += canBuild.Cost;
 
         // When building a level crossing, remove any pre-existing path furniture.
-        if (crossingMode == CREATE_CROSSING_MODE_TRACK_OVER_PATH && !(GetFlags() & GAME_COMMAND_FLAG_GHOST))
+        if (crossingMode == CreateCrossingMode::trackOverPath && !(GetFlags() & GAME_COMMAND_FLAG_GHOST))
         {
             auto footpathElement = MapGetFootpathElement(mapLoc);
             if (footpathElement != nullptr && footpathElement->HasAddition())
@@ -478,7 +500,7 @@ GameActions::Result TrackPlaceAction::Execute() const
             }
         }
 
-        if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST) && !gCheatsDisableClearanceChecks)
+        if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST) && !GetGameState().Cheats.DisableClearanceChecks)
         {
             FootpathRemoveLitter(mapLoc);
             if (rideTypeFlags & RIDE_TYPE_FLAG_TRACK_NO_WALLS)
@@ -503,11 +525,14 @@ GameActions::Result TrackPlaceAction::Execute() const
 
         const auto clearanceData = canBuild.GetData<ConstructClearResult>();
         uint8_t mapGroundFlags = clearanceData.GroundFlags & (ELEMENT_IS_ABOVE_GROUND | ELEMENT_IS_UNDERGROUND);
-        if (resultData.GroundFlags != 0 && (resultData.GroundFlags & mapGroundFlags) == 0)
+        if (!(ted.Flags & TRACK_ELEM_FLAG_CAN_BE_PARTLY_UNDERGROUND))
         {
-            return GameActions::Result(
-                GameActions::Status::Disallowed, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
-                STR_CANT_BUILD_PARTLY_ABOVE_AND_PARTLY_BELOW_GROUND);
+            if (resultData.GroundFlags != 0 && (resultData.GroundFlags & mapGroundFlags) == 0)
+            {
+                return GameActions::Result(
+                    GameActions::Status::Disallowed, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
+                    STR_CANT_BUILD_PARTLY_ABOVE_AND_PARTLY_BELOW_GROUND);
+            }
         }
 
         resultData.GroundFlags = mapGroundFlags;
@@ -516,7 +541,9 @@ GameActions::Result TrackPlaceAction::Execute() const
         auto surfaceElement = MapGetSurfaceElementAt(mapLoc);
         if (surfaceElement == nullptr)
         {
-            return GameActions::Result(GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+            return GameActions::Result(
+                GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
+                STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
         }
 
         int32_t supportHeight = baseZ - surfaceElement->GetBaseZ();
@@ -544,7 +571,7 @@ GameActions::Result TrackPlaceAction::Execute() const
         auto* trackElement = TileElementInsert<TrackElement>(mapLoc, quarterTile.GetBaseQuarterOccupied());
         if (trackElement == nullptr)
         {
-            LOG_WARNING("Cannot create track element for ride = %d", _rideIndex.ToUnderlying());
+            LOG_ERROR("Cannot create track element for ride = %d", _rideIndex.ToUnderlying());
             return GameActions::Result(
                 GameActions::Status::NoFreeElements, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE,
                 STR_TILE_ELEMENT_LIMIT_REACHED);
@@ -605,7 +632,7 @@ GameActions::Result TrackPlaceAction::Execute() const
             uint8_t availableDirections = entranceDirections & 0x0F;
             if (availableDirections != 0)
             {
-                if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST) && !gCheatsDisableClearanceChecks)
+                if (!(GetFlags() & GAME_COMMAND_FLAG_GHOST) && !GetGameState().Cheats.DisableClearanceChecks)
                 {
                     for (int32_t chosenDirection = UtilBitScanForward(availableDirections); chosenDirection != -1;
                          chosenDirection = UtilBitScanForward(availableDirections))
@@ -647,7 +674,7 @@ GameActions::Result TrackPlaceAction::Execute() const
             }
         }
 
-        if (!gCheatsDisableClearanceChecks || !(GetFlags() & GAME_COMMAND_FLAG_GHOST))
+        if (!GetGameState().Cheats.DisableClearanceChecks || !(GetFlags() & GAME_COMMAND_FLAG_GHOST))
         {
             FootpathConnectEdges(mapLoc, tileElement, GetFlags());
         }
@@ -678,7 +705,7 @@ GameActions::Result TrackPlaceAction::Execute() const
                 if (ride->mode == RideMode::PoweredLaunch)
                 {
                     if (ride->GetRideTypeDescriptor().SupportsRideMode(RideMode::PoweredLaunchBlockSectioned)
-                        || gCheatsShowAllOperatingModes)
+                        || GetGameState().Cheats.ShowAllOperatingModes)
                         newMode = RideMode::PoweredLaunchBlockSectioned;
                     else
                         newMode = RideMode::PoweredLaunch;

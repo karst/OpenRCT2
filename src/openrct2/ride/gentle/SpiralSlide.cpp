@@ -10,7 +10,9 @@
 #include "../../interface/Viewport.h"
 #include "../../object/StationObject.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/WoodenSupports.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
 #include "../Ride.h"
 #include "../RideEntry.h"
 #include "../Track.h"
@@ -200,11 +202,13 @@ static void PaintSpiralSlide(
     if (rideEntry == nullptr)
         return;
 
-    trackSequence = track_map_2x2[direction][trackSequence];
+    trackSequence = kTrackMap2x2[direction][trackSequence];
 
-    int32_t edges = edges_2x2[trackSequence];
+    int32_t edges = kEdges2x2[trackSequence];
 
-    WoodenASupportsPaintSetup(session, direction & 1, 0, height, GetStationColourScheme(session, trackElement));
+    WoodenASupportsPaintSetupRotated(
+        session, WoodenSupportType::Truss, WoodenSupportSubType::NeSw, direction, height,
+        GetStationColourScheme(session, trackElement));
 
     // Base
     const StationObject* stationObject = ride.GetStationObject();
@@ -240,8 +244,8 @@ static void PaintSpiralSlide(
             break;
     }
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 128, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 128);
 }
 
 /**

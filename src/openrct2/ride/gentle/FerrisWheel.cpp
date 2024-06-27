@@ -12,7 +12,9 @@
 #include "../../interface/Viewport.h"
 #include "../../paint/Boundbox.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/WoodenSupports.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
 #include "../Ride.h"
 #include "../RideEntry.h"
 #include "../Track.h"
@@ -104,7 +106,7 @@ static void PaintFerrisWheel(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement)
 {
-    uint8_t relativeTrackSequence = track_map_1x4[direction][trackSequence];
+    uint8_t relativeTrackSequence = kTrackMap1x4[direction][trackSequence];
 
     int32_t edges;
     if (direction & 1)
@@ -117,11 +119,12 @@ static void PaintFerrisWheel(
     }
 
     auto stationColour = GetStationColourScheme(session, trackElement);
-    WoodenASupportsPaintSetup(session, direction & 1, 0, height, stationColour);
+    WoodenASupportsPaintSetupRotated(
+        session, WoodenSupportType::Truss, WoodenSupportSubType::NeSw, direction, height, stationColour);
 
     const StationObject* stationObject = ride.GetStationObject();
 
-    TrackPaintUtilPaintFloor(session, edges, session.TrackColours, height, floorSpritesCork, stationObject);
+    TrackPaintUtilPaintFloor(session, edges, session.TrackColours, height, kFloorSpritesCork, stationObject);
 
     ImageId imageId;
     uint8_t rotation = session.CurrentRotation;
@@ -164,8 +167,8 @@ static void PaintFerrisWheel(
             break;
     }
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 176, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 176);
 }
 
 TRACK_PAINT_FUNCTION GetTrackPaintFunctionFerrisWheel(int32_t trackType)

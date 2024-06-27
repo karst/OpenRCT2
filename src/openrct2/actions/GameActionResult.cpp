@@ -2,6 +2,8 @@
 
 #include "../localisation/Localisation.h"
 
+#include <algorithm>
+
 namespace GameActions
 {
     Result::Result(GameActions::Status error, StringId title, StringId message, uint8_t* args /*= nullptr*/)
@@ -25,7 +27,7 @@ namespace GameActions
         }
         std::string operator()(const StringId strId) const
         {
-            return FormatStringID(strId, ErrorMessageArgs);
+            return FormatStringIDLegacy(strId, ErrorMessageArgs);
         }
     };
 

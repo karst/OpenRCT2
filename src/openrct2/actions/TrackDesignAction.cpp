@@ -10,6 +10,7 @@
 #include "TrackDesignAction.h"
 
 #include "../Context.h"
+#include "../GameState.h"
 #include "../management/Finance.h"
 #include "../management/Research.h"
 #include "../object/ObjectManager.h"
@@ -21,6 +22,8 @@
 #include "RideSetNameAction.h"
 #include "RideSetSettingAction.h"
 #include "RideSetVehicleAction.h"
+
+using namespace OpenRCT2;
 
 TrackDesignAction::TrackDesignAction(const CoordsXYZD& location, const TrackDesign& td)
     : _loc(location)
@@ -58,23 +61,24 @@ GameActions::Result TrackDesignAction::Query() const
     if (!LocationValid(_loc))
     {
         return GameActions::Result(
-            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+            GameActions::Status::InvalidParameters, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_OFF_EDGE_OF_MAP);
     }
 
-    auto& objManager = OpenRCT2::GetContext()->GetObjectManager();
-    auto entryIndex = objManager.GetLoadedObjectEntryIndex(_td.vehicle_object);
+    auto& gameState = GetGameState();
+    auto& objManager = GetContext()->GetObjectManager();
+    auto entryIndex = objManager.GetLoadedObjectEntryIndex(_td.vehicleObject);
     if (entryIndex == OBJECT_ENTRY_INDEX_NULL)
     {
         // Force a fallback if the entry is not invented yet a td6 of it is selected,
         // which can happen in select-by-track-type mode
-        if (!RideEntryIsInvented(entryIndex) && !gCheatsIgnoreResearchStatus)
+        if (!RideEntryIsInvented(entryIndex) && !gameState.Cheats.IgnoreResearchStatus)
         {
             entryIndex = OBJECT_ENTRY_INDEX_NULL;
         }
     }
 
     // Colours do not matter as will be overwritten
-    auto rideCreateAction = RideCreateAction(_td.type, entryIndex, 0, 0, gLastEntranceStyle);
+    auto rideCreateAction = RideCreateAction(_td.type, entryIndex, 0, 0, gameState.LastEntranceStyle);
     rideCreateAction.SetFlags(GetFlags());
     auto r = GameActions::ExecuteNested(&rideCreateAction);
     if (r.Error != GameActions::Status::Ok)
@@ -86,8 +90,9 @@ GameActions::Result TrackDesignAction::Query() const
     auto ride = GetRide(rideIndex);
     if (ride == nullptr)
     {
-        LOG_WARNING("Invalid game command for track placement, ride id = %d", rideIndex);
-        return GameActions::Result(GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+        LOG_ERROR("Ride not found for rideIndex %d", rideIndex);
+        return GameActions::Result(
+            GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_ERR_RIDE_NOT_FOUND);
     }
 
     bool placeScenery = true;
@@ -133,20 +138,21 @@ GameActions::Result TrackDesignAction::Execute() const
     res.Position.z = _loc.z;
     res.Expenditure = ExpenditureType::RideConstruction;
 
-    auto& objManager = OpenRCT2::GetContext()->GetObjectManager();
-    auto entryIndex = objManager.GetLoadedObjectEntryIndex(_td.vehicle_object);
+    auto& gameState = GetGameState();
+    auto& objManager = GetContext()->GetObjectManager();
+    auto entryIndex = objManager.GetLoadedObjectEntryIndex(_td.vehicleObject);
     if (entryIndex != OBJECT_ENTRY_INDEX_NULL)
     {
         // Force a fallback if the entry is not invented yet a track design using it is selected.
         // This can happen on rides with multiple vehicles where some have been invented and some haven’t.
-        if (!RideEntryIsInvented(entryIndex) && !gCheatsIgnoreResearchStatus)
+        if (!RideEntryIsInvented(entryIndex) && !gameState.Cheats.IgnoreResearchStatus)
         {
             entryIndex = OBJECT_ENTRY_INDEX_NULL;
         }
     }
 
     // Colours do not matter as will be overwritten
-    auto rideCreateAction = RideCreateAction(_td.type, entryIndex, 0, 0, gLastEntranceStyle);
+    auto rideCreateAction = RideCreateAction(_td.type, entryIndex, 0, 0, gameState.LastEntranceStyle);
     rideCreateAction.SetFlags(GetFlags());
     auto r = GameActions::ExecuteNested(&rideCreateAction);
     if (r.Error != GameActions::Status::Ok)
@@ -158,8 +164,9 @@ GameActions::Result TrackDesignAction::Execute() const
     auto ride = GetRide(rideIndex);
     if (ride == nullptr)
     {
-        LOG_WARNING("Invalid game command for track placement, ride id = %d", rideIndex);
-        return GameActions::Result(GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_NONE);
+        LOG_ERROR("Ride not found for rideIndex %d", rideIndex);
+        return GameActions::Result(
+            GameActions::Status::Unknown, STR_RIDE_CONSTRUCTION_CANT_CONSTRUCT_THIS_HERE, STR_ERR_RIDE_NOT_FOUND);
     }
 
     // Query first, this is required again to determine if scenery is available.
@@ -217,21 +224,20 @@ GameActions::Result TrackDesignAction::Execute() const
         GameActions::ExecuteNested(&rideSetVehicleAction);
     }
 
-    SetOperatingSettingNested(ride->id, RideSetSetting::Mode, static_cast<uint8_t>(_td.ride_mode), GAME_COMMAND_FLAG_APPLY);
-    auto rideSetVehicleAction2 = RideSetVehicleAction(ride->id, RideSetVehicleType::NumTrains, _td.number_of_trains);
+    SetOperatingSettingNested(ride->id, RideSetSetting::Mode, static_cast<uint8_t>(_td.rideMode), GAME_COMMAND_FLAG_APPLY);
+    auto rideSetVehicleAction2 = RideSetVehicleAction(ride->id, RideSetVehicleType::NumTrains, _td.numberOfTrains);
     GameActions::ExecuteNested(&rideSetVehicleAction2);
 
-    auto rideSetVehicleAction3 = RideSetVehicleAction(
-        ride->id, RideSetVehicleType::NumCarsPerTrain, _td.number_of_cars_per_train);
+    auto rideSetVehicleAction3 = RideSetVehicleAction(ride->id, RideSetVehicleType::NumCarsPerTrain, _td.numberOfCarsPerTrain);
     GameActions::ExecuteNested(&rideSetVehicleAction3);
 
-    SetOperatingSettingNested(ride->id, RideSetSetting::Departure, _td.depart_flags, GAME_COMMAND_FLAG_APPLY);
-    SetOperatingSettingNested(ride->id, RideSetSetting::MinWaitingTime, _td.min_waiting_time, GAME_COMMAND_FLAG_APPLY);
-    SetOperatingSettingNested(ride->id, RideSetSetting::MaxWaitingTime, _td.max_waiting_time, GAME_COMMAND_FLAG_APPLY);
-    SetOperatingSettingNested(ride->id, RideSetSetting::Operation, _td.operation_setting, GAME_COMMAND_FLAG_APPLY);
-    SetOperatingSettingNested(ride->id, RideSetSetting::LiftHillSpeed, _td.lift_hill_speed & 0x1F, GAME_COMMAND_FLAG_APPLY);
+    SetOperatingSettingNested(ride->id, RideSetSetting::Departure, _td.departFlags, GAME_COMMAND_FLAG_APPLY);
+    SetOperatingSettingNested(ride->id, RideSetSetting::MinWaitingTime, _td.minWaitingTime, GAME_COMMAND_FLAG_APPLY);
+    SetOperatingSettingNested(ride->id, RideSetSetting::MaxWaitingTime, _td.maxWaitingTime, GAME_COMMAND_FLAG_APPLY);
+    SetOperatingSettingNested(ride->id, RideSetSetting::Operation, _td.operationSetting, GAME_COMMAND_FLAG_APPLY);
+    SetOperatingSettingNested(ride->id, RideSetSetting::LiftHillSpeed, _td.liftHillSpeed & 0x1F, GAME_COMMAND_FLAG_APPLY);
 
-    uint8_t num_circuits = _td.num_circuits;
+    uint8_t num_circuits = _td.numCircuits;
     if (num_circuits == 0)
     {
         num_circuits = 1;
@@ -239,24 +245,24 @@ GameActions::Result TrackDesignAction::Execute() const
     SetOperatingSettingNested(ride->id, RideSetSetting::NumCircuits, num_circuits, GAME_COMMAND_FLAG_APPLY);
     ride->SetToDefaultInspectionInterval();
     ride->lifecycle_flags |= RIDE_LIFECYCLE_NOT_CUSTOM_DESIGN;
-    ride->colour_scheme_type = _td.colour_scheme;
+    ride->colour_scheme_type = _td.colourScheme;
 
-    ride->entrance_style = objManager.GetLoadedObjectEntryIndex(_td.StationObjectIdentifier);
+    ride->entrance_style = objManager.GetLoadedObjectEntryIndex(_td.stationObjectIdentifier);
     if (ride->entrance_style == OBJECT_ENTRY_INDEX_NULL)
     {
-        ride->entrance_style = gLastEntranceStyle;
+        ride->entrance_style = gameState.LastEntranceStyle;
     }
 
-    for (int32_t i = 0; i < OpenRCT2::Limits::NumColourSchemes; i++)
+    for (int32_t i = 0; i < Limits::kNumColourSchemes; i++)
     {
-        ride->track_colour[i].main = _td.track_spine_colour[i];
-        ride->track_colour[i].additional = _td.track_rail_colour[i];
-        ride->track_colour[i].supports = _td.track_support_colour[i];
+        ride->track_colour[i].main = _td.trackSpineColour[i];
+        ride->track_colour[i].additional = _td.trackRailColour[i];
+        ride->track_colour[i].supports = _td.trackSupportColour[i];
     }
 
-    for (size_t i = 0; i < OpenRCT2::Limits::MaxVehicleColours; i++)
+    for (size_t i = 0; i < Limits::kMaxVehicleColours; i++)
     {
-        ride->vehicle_colours[i] = _td.vehicle_colours[i];
+        ride->vehicle_colours[i] = _td.vehicleColours[i];
     }
 
     for (int32_t count = 1; count == 1 || r.Error != GameActions::Status::Ok; ++count)

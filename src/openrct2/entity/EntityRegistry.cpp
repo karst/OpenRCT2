@@ -10,6 +10,7 @@
 #include "EntityRegistry.h"
 
 #include "../Game.h"
+#include "../GameState.h"
 #include "../core/Algorithm.hpp"
 #include "../core/ChecksumStream.h"
 #include "../core/Crypt.h"
@@ -30,29 +31,19 @@
 #include "MoneyEffect.h"
 #include "Particle.h"
 
-#include <algorithm>
 #include <cmath>
 #include <iterator>
 #include <numeric>
 #include <vector>
 
-union Entity
-{
-    uint8_t Pad00[0x200];
-    EntityBase base;
-    Entity()
-        : Pad00()
-    {
-    }
-};
+using namespace OpenRCT2;
 
-static Entity _entities[MAX_ENTITIES]{};
 static std::array<std::list<EntityId>, EnumValue(EntityType::Count)> gEntityLists;
 static std::vector<EntityId> _freeIdList;
 
 static bool _entityFlashingList[MAX_ENTITIES];
 
-constexpr const uint32_t SPATIAL_INDEX_SIZE = (MAXIMUM_MAP_SIZE_TECHNICAL * MAXIMUM_MAP_SIZE_TECHNICAL) + 1;
+constexpr const uint32_t SPATIAL_INDEX_SIZE = (kMaximumMapSizeTechnical * kMaximumMapSizeTechnical) + 1;
 constexpr uint32_t SPATIAL_INDEX_LOCATION_NULL = SPATIAL_INDEX_SIZE - 1;
 
 static std::array<std::vector<EntityId>, SPATIAL_INDEX_SIZE> gEntitySpatialIndex;
@@ -68,10 +59,10 @@ static constexpr size_t GetSpatialIndexOffset(const CoordsXY& loc)
     const auto tileX = std::abs(loc.x) / COORDS_XY_STEP;
     const auto tileY = std::abs(loc.y) / COORDS_XY_STEP;
 
-    if (tileX >= MAXIMUM_MAP_SIZE_TECHNICAL || tileY >= MAXIMUM_MAP_SIZE_TECHNICAL)
+    if (tileX >= kMaximumMapSizeTechnical || tileY >= kMaximumMapSizeTechnical)
         return SPATIAL_INDEX_LOCATION_NULL;
 
-    return tileX * MAXIMUM_MAP_SIZE_TECHNICAL + tileY;
+    return tileX * kMaximumMapSizeTechnical + tileY;
 }
 
 constexpr bool EntityTypeIsMiscEntity(const EntityType type)
@@ -120,8 +111,9 @@ std::string EntitiesChecksum::ToString() const
 
 EntityBase* TryGetEntity(EntityId entityIndex)
 {
+    auto& gameState = GetGameState();
     const auto idx = entityIndex.ToUnderlying();
-    return idx >= MAX_ENTITIES ? nullptr : &_entities[idx].base;
+    return idx >= MAX_ENTITIES ? nullptr : &gameState.Entities[idx].base;
 }
 
 EntityBase* GetEntity(EntityId entityIndex)
@@ -171,8 +163,6 @@ const std::list<EntityId>& GetEntityList(const EntityType id)
  */
 void ResetAllEntities()
 {
-    gSavedAge = 0;
-
     // Free all associated Entity pointers prior to zeroing memory
     for (int32_t i = 0; i < MAX_ENTITIES; ++i)
     {
@@ -184,7 +174,8 @@ void ResetAllEntities()
         FreeEntity(*spr);
     }
 
-    std::fill(std::begin(_entities), std::end(_entities), Entity());
+    auto& gameState = GetGameState();
+    std::fill(std::begin(gameState.Entities), std::end(gameState.Entities), Entity_t());
     OpenRCT2::RideUse::GetHistory().Clear();
     OpenRCT2::RideUse::GetTypeHistory().Clear();
     for (int32_t i = 0; i < MAX_ENTITIES; ++i)
@@ -268,14 +259,15 @@ static void EntityReset(EntityBase* entity)
     auto entityIndex = entity->Id;
     _entityFlashingList[entityIndex.ToUnderlying()] = false;
 
-    Entity* spr = reinterpret_cast<Entity*>(entity);
-    *spr = Entity();
+    Entity_t* tempEntity = reinterpret_cast<Entity_t*>(entity);
+    *tempEntity = Entity_t();
 
     entity->Id = entityIndex;
     entity->Type = EntityType::Null;
 }
 
-static constexpr uint16_t MAX_MISC_SPRITES = 300;
+static constexpr uint16_t MAX_MISC_SPRITES = 1600;
+
 static void AddToEntityList(EntityBase* entity)
 {
     auto& list = gEntityLists[EnumValue(entity->Type)];

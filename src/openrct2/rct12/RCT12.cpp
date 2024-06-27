@@ -13,6 +13,7 @@
 #include "../localisation/Formatting.h"
 #include "../localisation/Localisation.h"
 #include "../object/ObjectList.h"
+#include "../rct1/Tables.h"
 #include "../rct2/RCT2.h"
 #include "../ride/Ride.h"
 #include "../ride/Track.h"
@@ -24,13 +25,14 @@
 #include "../world/Surface.h"
 #include "../world/TileElement.h"
 #include "../world/Wall.h"
+#include "../world/tile_element/Slope.h"
 #include "EntryList.h"
 
 using namespace OpenRCT2;
 
 RCT12TileElementType RCT12TileElementBase::GetType() const
 {
-    auto elem_type = static_cast<RCT12TileElementType>((this->Type & TILE_ELEMENT_TYPE_MASK) >> 2);
+    auto elem_type = static_cast<RCT12TileElementType>((this->Type & kTileElementTypeMask) >> 2);
     switch (elem_type)
     {
         case RCT12TileElementType::Surface:
@@ -53,12 +55,12 @@ RCT12TileElementType RCT12TileElementBase::GetType() const
 
 uint8_t RCT12TileElementBase::GetDirection() const
 {
-    return this->Type & TILE_ELEMENT_DIRECTION_MASK;
+    return this->Type & kTileElementDirectionMask;
 }
 
 uint8_t RCT12TileElementBase::GetOccupiedQuadrants() const
 {
-    return Flags & TILE_ELEMENT_OCCUPIED_QUADRANTS_MASK;
+    return Flags & kTileElementOccupiedQuadrantsMask;
 }
 
 bool RCT12TileElementBase::IsLastForTile() const
@@ -73,7 +75,7 @@ bool RCT12TileElementBase::IsGhost() const
 
 uint8_t RCT12SurfaceElement::GetSlope() const
 {
-    return (Slope & TILE_ELEMENT_SURFACE_SLOPE_MASK);
+    return (Slope & kTileSlopeMask);
 }
 
 uint32_t RCT12SurfaceElement::GetSurfaceStyle() const
@@ -98,7 +100,7 @@ uint8_t RCT12SurfaceElement::GetGrassLength() const
 
 uint8_t RCT12SurfaceElement::GetOwnership() const
 {
-    return (Ownership & TILE_ELEMENT_SURFACE_OWNERSHIP_MASK);
+    return (Ownership & kTileElementSurfaceOwnershipMask);
 }
 
 uint32_t RCT12SurfaceElement::GetWaterHeight() const
@@ -108,7 +110,7 @@ uint32_t RCT12SurfaceElement::GetWaterHeight() const
 
 uint8_t RCT12SurfaceElement::GetParkFences() const
 {
-    return (Ownership & TILE_ELEMENT_SURFACE_PARK_FENCE_MASK);
+    return (Ownership & kTileElementSurfaceParkFenceMask);
 }
 
 bool RCT12SurfaceElement::HasTrackThatNeedsWater() const
@@ -307,7 +309,7 @@ uint8_t RCT12SmallSceneryElement::GetAge() const
 
 uint8_t RCT12SmallSceneryElement::GetSceneryQuadrant() const
 {
-    return (this->Type & TILE_ELEMENT_QUADRANT_MASK) >> 6;
+    return (this->Type & kTileElementQuadrantMask) >> 6;
 }
 
 colour_t RCT12SmallSceneryElement::GetPrimaryColour() const
@@ -357,7 +359,7 @@ uint8_t RCT12WallElement::GetEntryIndex() const
 
 uint8_t RCT12WallElement::GetSlope() const
 {
-    return (Type & TILE_ELEMENT_QUADRANT_MASK) >> 6;
+    return (Type & kTileElementQuadrantMask) >> 6;
 }
 
 colour_t RCT12WallElement::GetPrimaryColour() const
@@ -407,7 +409,14 @@ int32_t RCT12WallElement::GetRCT1WallType(int32_t edge) const
 
     if (typeB != 0x0F)
     {
-        return typeA | (typeB << 2);
+        int32_t index = typeA | (typeB << 2);
+
+        auto slope = GetRCT1Slope();
+        auto edgeSlope = GetWallSlopeFromEdgeSlope(slope, edge & 3);
+        if (edgeSlope & (EDGE_SLOPE_UPWARDS | EDGE_SLOPE_DOWNWARDS))
+            index = RCT1::MapSlopedWall(index);
+
+        return index;
     }
 
     return -1;
@@ -642,7 +651,7 @@ std::string ConvertFormattedStringToOpenRCT2(std::string_view buffer)
         auto token = GetFormatTokenFromRCT12Code(codepoint);
         if (token != FormatToken::Unknown)
         {
-            result += GetFormatTokenStringWithBraces(token);
+            result += FormatTokenToStringWithBraces(token);
         }
         else
         {
@@ -930,18 +939,17 @@ void ImportMazeElement(TrackDesign& td, const TD46MazeElement& td46MazeElement)
     if (td46MazeElement.IsEntrance() || td46MazeElement.IsExit())
     {
         TrackDesignEntranceElement element{};
-        element.Location = TileCoordsXYZD(td46MazeElement.x, td46MazeElement.y, 0, td46MazeElement.Direction);
-        element.IsExit = td46MazeElement.IsExit();
-        td.entrance_elements.push_back(element);
+        element.location = TileCoordsXYZD(td46MazeElement.x, td46MazeElement.y, 0, td46MazeElement.Direction);
+        element.isExit = td46MazeElement.IsExit();
+        td.entranceElements.push_back(element);
     }
     else
     {
         TrackDesignMazeElement mazeElement{};
-        mazeElement.x = td46MazeElement.x;
-        mazeElement.y = td46MazeElement.y;
-        mazeElement.direction = td46MazeElement.Direction;
-        mazeElement.type = td46MazeElement.Type;
-        td.maze_elements.push_back(mazeElement);
+        mazeElement.location.x = td46MazeElement.x;
+        mazeElement.location.y = td46MazeElement.y;
+        mazeElement.mazeEntry = td46MazeElement.MazeEntry;
+        td.mazeElements.push_back(mazeElement);
     }
 }
 

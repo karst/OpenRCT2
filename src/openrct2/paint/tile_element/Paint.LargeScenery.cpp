@@ -10,6 +10,7 @@
 #include "../Paint.h"
 
 #include "../../Game.h"
+#include "../../GameState.h"
 #include "../../config/Config.h"
 #include "../../core/Numerics.hpp"
 #include "../../core/String.hpp"
@@ -17,6 +18,7 @@
 #include "../../localisation/Formatter.h"
 #include "../../localisation/Formatting.h"
 #include "../../localisation/Localisation.h"
+#include "../../localisation/StringIds.h"
 #include "../../object/LargeSceneryObject.h"
 #include "../../profiling/Profiling.h"
 #include "../../ride/Ride.h"
@@ -27,8 +29,11 @@
 #include "../../world/Scenery.h"
 #include "../../world/TileInspector.h"
 #include "../Boundbox.h"
-#include "../Supports.h"
+#include "../support/WoodenSupports.h"
 #include "Paint.TileElement.h"
+#include "Segment.h"
+
+using namespace OpenRCT2;
 
 // clang-format off
 static constexpr BoundBoxXY LargeSceneryBoundBoxes[] = {
@@ -75,13 +80,13 @@ static void PaintLargeScenerySupports(
     int32_t clearanceHeight = Ceil2(tileElement.GetClearanceZ() + 15, 16);
     if (tile.flags & LARGE_SCENERY_TILE_FLAG_ALLOW_SUPPORTS_ABOVE)
     {
-        PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, clearanceHeight, 0x20);
+        PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, clearanceHeight, 0x20);
     }
     else
     {
-        PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
+        PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
     }
-    PaintUtilSetGeneralSupportHeight(session, clearanceHeight, 0x20);
+    PaintUtilSetGeneralSupportHeight(session, clearanceHeight);
 }
 
 static std::string_view LargeSceneryCalculateDisplayText(const LargeSceneryText& text, std::string_view s, bool height)
@@ -312,7 +317,7 @@ static void PaintLargeSceneryScrollingText(
     banner->FormatTextTo(ft);
 
     char text[256];
-    if (gConfigGeneral.UpperCaseBanners)
+    if (Config::Get().general.UpperCaseBanners)
     {
         FormatStringToUpper(text, sizeof(text), STR_SCROLLING_SIGN_TEXT, ft.Data());
     }
@@ -323,7 +328,7 @@ static void PaintLargeSceneryScrollingText(
 
     auto scrollMode = sceneryEntry.scrolling_mode + ((direction + 1) & 3);
     auto stringWidth = GfxGetStringWidth(text, FontStyle::Tiny);
-    auto scroll = stringWidth > 0 ? (gCurrentTicks / 2) % stringWidth : 0;
+    auto scroll = stringWidth > 0 ? (GetGameState().CurrentTicks / 2) % stringWidth : 0;
     auto imageId = ScrollingTextSetup(session, STR_SCROLLING_SIGN_TEXT, ft, scroll, scrollMode, textPaletteIndex);
     PaintAddImageAsChild(session, imageId, { 0, 0, height + 25 }, { bbOffset, { 1, 1, 21 } });
 }

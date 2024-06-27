@@ -97,25 +97,23 @@ namespace Platform
         }
         // 2. Try {${exeDir},${cwd},/}/{data,standard system app directories}
         // exeDir should come first to allow installing into build dir
-        std::vector<std::string> prefixes;
-        auto exePath = Platform::GetCurrentExecutablePath();
-        prefixes.push_back(Path::GetDirectory(exePath));
-        prefixes.push_back(GetCurrentWorkingDirectory());
-        prefixes.push_back("/");
-        static const char* SearchLocations[] = {
+        // clang-format off
+        const std::string prefixes[]{
+            Path::GetDirectory(Platform::GetCurrentExecutablePath()),
+            GetCurrentWorkingDirectory(),
+            "/"
+        };
+        static constexpr u8string_view SearchLocations[] = {
             "/data",
             "../share/openrct2",
-#    ifdef ORCT2_RESOURCE_DIR
-            // defined in CMakeLists.txt
-            ORCT2_RESOURCE_DIR,
-#    endif // ORCT2_RESOURCE_DIR
             "/usr/local/share/openrct2",
             "/var/lib/openrct2",
             "/usr/share/openrct2",
         };
+        // clang-format on
         for (const auto& prefix : prefixes)
         {
-            for (auto searchLocation : SearchLocations)
+            for (const auto searchLocation : SearchLocations)
             {
                 auto prefixedPath = Path::Combine(prefix, searchLocation);
                 LOG_VERBOSE("Looking for OpenRCT2 data in %s", prefixedPath.c_str());
@@ -301,7 +299,15 @@ namespace Platform
             return {};
         }
 
-        auto steamPath = Path::Combine(homeDir, u8".local/share/Steam/ubuntu12_32/steamapps/content");
+        // Prefer new path for Steam, which is the default when using with Proton
+        auto steamPath = Path::Combine(homeDir, u8".local/share/Steam/steamapps/common");
+        if (Path::DirectoryExists(steamPath))
+        {
+            return steamPath;
+        }
+
+        // Fallback paths
+        steamPath = Path::Combine(homeDir, u8".local/share/Steam/ubuntu12_32/steamapps/content");
         if (Path::DirectoryExists(steamPath))
         {
             return steamPath;
@@ -312,8 +318,17 @@ namespace Platform
         {
             return steamPath;
         }
-
         return {};
+    }
+
+    u8string GetRCT1SteamDir()
+    {
+        return u8"Rollercoaster Tycoon Deluxe";
+    }
+
+    u8string GetRCT2SteamDir()
+    {
+        return u8"Rollercoaster Tycoon 2";
     }
 
 #    ifndef NO_TTF

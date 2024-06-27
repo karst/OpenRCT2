@@ -10,7 +10,10 @@
 #include "../../common.h"
 #include "../../interface/Viewport.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/WoodenSupports.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
+#include "../../paint/track/Support.h"
 #include "../../world/Map.h"
 #include "../Ride.h"
 #include "../Track.h"
@@ -83,19 +86,21 @@ static void PaintObservationTowerBase(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement)
 {
-    trackSequence = track_map_3x3[direction][trackSequence];
+    trackSequence = kTrackMap3x3[direction][trackSequence];
 
-    int32_t edges = edges_3x3[trackSequence];
+    int32_t edges = kEdges3x3[trackSequence];
     CoordsXY position = session.MapPosition;
 
-    WoodenASupportsPaintSetup(session, (direction & 1), 0, height, GetStationColourScheme(session, trackElement));
+    WoodenASupportsPaintSetupRotated(
+        session, WoodenSupportType::Truss, WoodenSupportSubType::NeSw, direction, height,
+        GetStationColourScheme(session, trackElement));
 
     const StationObject* stationObject = ride.GetStationObject();
 
-    TrackPaintUtilPaintFloor(session, edges, session.SupportColours, height, floorSpritesMetalB, stationObject);
+    TrackPaintUtilPaintFloor(session, edges, session.SupportColours, height, kFloorSpritesMetalB, stationObject);
 
     TrackPaintUtilPaintFences(
-        session, edges, position, trackElement, ride, session.TrackColours, height, fenceSpritesMetalB,
+        session, edges, position, trackElement, ride, session.TrackColours, height, kFenceSpritesMetalB,
         session.CurrentRotation);
 
     if (trackSequence == 0)
@@ -110,9 +115,9 @@ static void PaintObservationTowerBase(
         PaintAddImageAsParent(session, imageId, { 0, 0, height + 64 }, { { 8, 8, height + 64 }, { 2, 2, 30 } });
 
         PaintUtilSetVerticalTunnel(session, height + 96);
-        PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
+        PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
 
-        PaintUtilSetGeneralSupportHeight(session, height + 96, 0x20);
+        PaintUtilSetGeneralSupportHeight(session, height + 96);
 
         return;
     }
@@ -121,33 +126,42 @@ static void PaintObservationTowerBase(
     switch (trackSequence)
     {
         case 1:
-            blockedSegments = SEGMENT_B8 | SEGMENT_C8 | SEGMENT_B4 | SEGMENT_CC | SEGMENT_BC;
+            blockedSegments = EnumsToFlags(
+                PaintSegment::leftCorner, PaintSegment::topLeftSide, PaintSegment::topCorner, PaintSegment::topRightSide,
+                PaintSegment::rightCorner);
             break;
         case 2:
-            blockedSegments = SEGMENT_B4 | SEGMENT_CC | SEGMENT_BC;
+            blockedSegments = EnumsToFlags(PaintSegment::topCorner, PaintSegment::topRightSide, PaintSegment::rightCorner);
             break;
         case 3:
-            blockedSegments = SEGMENT_B4 | SEGMENT_CC | SEGMENT_BC | SEGMENT_D4 | SEGMENT_C0;
+            blockedSegments = EnumsToFlags(
+                PaintSegment::topCorner, PaintSegment::topRightSide, PaintSegment::rightCorner, PaintSegment::bottomRightSide,
+                PaintSegment::bottomCorner);
             break;
         case 4:
-            blockedSegments = SEGMENT_B4 | SEGMENT_C8 | SEGMENT_B8;
+            blockedSegments = EnumsToFlags(PaintSegment::topCorner, PaintSegment::topLeftSide, PaintSegment::leftCorner);
             break;
         case 5:
-            blockedSegments = SEGMENT_BC | SEGMENT_D4 | SEGMENT_C0;
+            blockedSegments = EnumsToFlags(
+                PaintSegment::rightCorner, PaintSegment::bottomRightSide, PaintSegment::bottomCorner);
             break;
         case 6:
-            blockedSegments = SEGMENT_B4 | SEGMENT_C8 | SEGMENT_B8 | SEGMENT_D0 | SEGMENT_C0;
+            blockedSegments = EnumsToFlags(
+                PaintSegment::topCorner, PaintSegment::topLeftSide, PaintSegment::leftCorner, PaintSegment::bottomLeftSide,
+                PaintSegment::bottomCorner);
             break;
         case 7:
-            blockedSegments = SEGMENT_B8 | SEGMENT_D0 | SEGMENT_C0 | SEGMENT_D4 | SEGMENT_BC;
+            blockedSegments = EnumsToFlags(
+                PaintSegment::leftCorner, PaintSegment::bottomLeftSide, PaintSegment::bottomCorner,
+                PaintSegment::bottomRightSide, PaintSegment::rightCorner);
             break;
         case 8:
-            blockedSegments = SEGMENT_B8 | SEGMENT_D0 | SEGMENT_C0;
+            blockedSegments = EnumsToFlags(PaintSegment::leftCorner, PaintSegment::bottomLeftSide, PaintSegment::bottomCorner);
             break;
     }
     PaintUtilSetSegmentSupportHeight(session, blockedSegments, 0xFFFF, 0);
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL & ~blockedSegments, height + 2, 0x20);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll & ~blockedSegments, height + 2, 0x20);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 /** rct2: 0x0070DD7C */
@@ -170,10 +184,10 @@ static void PaintObservationTowerSection(
         PaintAddImageAsChild(session, imageId, { 0, 0, height }, { { 8, 8, height }, { 2, 2, 30 } });
     }
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
 
     PaintUtilSetVerticalTunnel(session, height + 32);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 /**

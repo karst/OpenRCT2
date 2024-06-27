@@ -10,13 +10,18 @@
 #include "../../drawing/Drawing.h"
 #include "../../interface/Viewport.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/WoodenSupports.h"
 #include "../../paint/tile_element/Paint.TileElement.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
+#include "../../paint/track/Support.h"
 #include "../../sprites.h"
 #include "../../world/Map.h"
 #include "../RideData.h"
 #include "../TrackData.h"
 #include "../TrackPaint.h"
+
+static constexpr WoodenSupportType kSupportType = WoodenSupportType::Truss;
 
 enum
 {
@@ -203,18 +208,19 @@ static void PaintReverseFreefallRCFlat(
     {
         auto imageId = session.TrackColours.WithIndex(SPR_REVERSE_FREEFALL_RC_FLAT_NW_SE);
         PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 6, 0, height }, { 20, 32, 1 } });
-        PaintUtilPushTunnelRight(session, height, TUNNEL_SQUARE_FLAT);
+        PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
     }
     else
     {
         auto imageId = session.TrackColours.WithIndex(SPR_REVERSE_FREEFALL_RC_FLAT_SW_NE);
         PaintAddImageAsParent(session, imageId, { 0, 0, height }, { { 0, 6, height }, { 32, 20, 1 } });
-        PaintUtilPushTunnelLeft(session, height, TUNNEL_SQUARE_FLAT);
+        PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
     }
 
-    WoodenASupportsPaintSetup(session, (direction & 1) ? 1 : 0, 0, height, session.SupportColours);
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    WoodenASupportsPaintSetupRotated(
+        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void PaintReverseFreefallRCStation(
@@ -233,8 +239,9 @@ static void PaintReverseFreefallRCStation(
         imageId = session.TrackColours.WithIndex(reverse_freefall_rc_track_pieces_station[direction]);
         PaintAddImageAsChild(session, imageId, { 0, 0, height }, { { 0, 6, height }, { 32, 20, 1 } });
 
-        WoodenASupportsPaintSetup(session, (direction & 1) ? 1 : 0, 0, height, session.SupportColours);
-        PaintUtilPushTunnelLeft(session, height, TUNNEL_SQUARE_FLAT);
+        WoodenASupportsPaintSetupRotated(
+            session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+        PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
     }
     else if (direction == 1 || direction == 3)
     {
@@ -246,14 +253,15 @@ static void PaintReverseFreefallRCStation(
         imageId = session.TrackColours.WithIndex(reverse_freefall_rc_track_pieces_station[direction]);
         PaintAddImageAsChild(session, imageId, { 0, 0, height }, { { 6, 0, height }, { 20, 32, 1 } });
 
-        WoodenASupportsPaintSetup(session, (direction & 1) ? 1 : 0, 0, height, session.SupportColours);
-        PaintUtilPushTunnelRight(session, height, TUNNEL_SQUARE_FLAT);
+        WoodenASupportsPaintSetupRotated(
+            session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+        PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
     }
 
     TrackPaintUtilDrawNarrowStationPlatform(session, ride, direction, height, 5, trackElement);
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 static void PaintReverseFreefallRCSlope(
@@ -288,11 +296,11 @@ static void PaintReverseFreefallRCSlope(
                 int32_t tunnelOffset = tunnelOffsets03[trackSequence];
                 if (direction & 1)
                 {
-                    PaintUtilPushTunnelRight(session, height + tunnelOffset, TUNNEL_SQUARE_FLAT);
+                    PaintUtilPushTunnelRight(session, height + tunnelOffset, TunnelType::SquareFlat);
                 }
                 else
                 {
-                    PaintUtilPushTunnelLeft(session, height + tunnelOffset, TUNNEL_SQUARE_FLAT);
+                    PaintUtilPushTunnelLeft(session, height + tunnelOffset, TunnelType::SquareFlat);
                 }
             }
             else
@@ -304,12 +312,14 @@ static void PaintReverseFreefallRCSlope(
                     session, direction, supportsImageId, { 0, 0, height }, { { 0, 6, height }, { 32, 20, bbHeight } });
             }
 
-            WoodenASupportsPaintSetup(session, direction & 1, 0, height, session.SupportColours);
-            PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + supportHeights[trackSequence], 0x20);
+            WoodenASupportsPaintSetupRotated(
+                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+            PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + supportHeights[trackSequence]);
             break;
         case 5:
-            if (WoodenASupportsPaintSetup(session, direction & 1, 0, height, session.SupportColours))
+            if (WoodenASupportsPaintSetupRotated(
+                    session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours))
             {
                 ImageId floorImageId;
                 if (direction & 1)
@@ -331,8 +341,8 @@ static void PaintReverseFreefallRCSlope(
                     session, direction, supportsImageId, { 0, 0, height },
                     { { isDirection03 ? 3 : 11, 3, height }, { isDirection03 ? 26 : 18, 26, 126 } });
             }
-            PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + supportHeights[trackSequence], 0x20);
+            PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + supportHeights[trackSequence]);
             break;
         case 6:
             if (isDirection03)
@@ -349,9 +359,10 @@ static void PaintReverseFreefallRCSlope(
                 PaintAddImageAsChildRotated(
                     session, direction, supportsImageId, { 0, 0, height }, { { 27, 6, height }, { 1, 20, 126 } });
             }
-            WoodenASupportsPaintSetup(session, direction & 1, 0, height, session.SupportColours);
-            PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + supportHeights[trackSequence], 0x20);
+            WoodenASupportsPaintSetupRotated(
+                session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
+            PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + supportHeights[trackSequence]);
             break;
     }
 }
@@ -366,8 +377,8 @@ static void PaintReverseFreefallRCVertical(
         case 0:
             supportsImageId = session.SupportColours.WithIndex(reverse_freefall_rc_track_pieces_vertical_supports[direction]);
             PaintAddImageAsParent(session, supportsImageId, { 0, 0, height }, { { 3, 3, height }, { 26, 26, 79 } });
-            PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 80, 0x20);
+            PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 80);
             break;
         case 1:
             trackImageId = session.TrackColours.WithIndex(reverse_freefall_rc_track_pieces_vertical[direction]);
@@ -382,8 +393,8 @@ static void PaintReverseFreefallRCVertical(
                     session, direction, trackImageId, { 0, 0, height }, { { 30, 6, height }, { 2, 20, 79 } });
             }
             PaintUtilSetVerticalTunnel(session, height + 80);
-            PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 80, 0x20);
+            PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 80);
             break;
     }
 }
@@ -410,13 +421,14 @@ static void PaintReverseFreefallRCOnridePhoto(
     PaintAddImageAsParentRotated(
         session, direction, colour.WithIndex(imageIds[direction]), { 0, 0, height }, { { 0, 6, height }, { 32, 20, 1 } });
 
-    WoodenASupportsPaintSetup(session, direction & 1, 0, height, session.SupportColours);
+    WoodenASupportsPaintSetupRotated(
+        session, kSupportType, WoodenSupportSubType::NeSw, direction, height, session.SupportColours);
 
     TrackPaintUtilOnridePhotoPaint(session, direction, height + 3, trackElement);
-    PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_FLAT);
+    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 TRACK_PAINT_FUNCTION GetTrackPaintFunctionReverseFreefallRC(int32_t trackType)

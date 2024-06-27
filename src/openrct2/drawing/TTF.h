@@ -15,6 +15,7 @@
 
 bool TTFInitialise();
 void TTFDispose();
+struct TTFSurface;
 
 #ifndef NO_TTF
 
@@ -23,7 +24,6 @@ struct TTFSurface
     const void* pixels;
     int32_t w;
     int32_t h;
-    int32_t pitch;
 };
 
 TTFFontDescriptor* TTFGetFontFromSpriteBase(FontStyle fontStyle);

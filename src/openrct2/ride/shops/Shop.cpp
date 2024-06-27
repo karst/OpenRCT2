@@ -10,7 +10,9 @@
 #include "../../interface/Viewport.h"
 #include "../../paint/Boundbox.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/WoodenSupports.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
 #include "../../sprites.h"
 #include "../../world/Map.h"
 #include "../Ride.h"
@@ -52,11 +54,11 @@ static void PaintShop(
         PaintAddImageAsParent(session, imageFlags.WithIndex(imageIndex), offset, bb);
     }
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 48);
 
     if (direction == 1 || direction == 2)
-        PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_FLAT);
+        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareFlat);
 }
 
 TRACK_PAINT_FUNCTION GetTrackPaintFunctionShop(int32_t trackType)

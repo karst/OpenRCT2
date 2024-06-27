@@ -51,7 +51,11 @@ GameActions::Result BannerRemoveAction::Query() const
     res.Position.z = _loc.z;
     res.ErrorTitle = STR_CANT_REMOVE_THIS;
 
-    if (!LocationValid(_loc) || !MapCanBuildAt({ _loc.x, _loc.y, _loc.z - 16 }))
+    if (!LocationValid(_loc))
+    {
+        return GameActions::Result(GameActions::Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_OFF_EDGE_OF_MAP);
+    }
+    if (!MapCanBuildAt({ _loc.x, _loc.y, _loc.z - 16 }))
     {
         return GameActions::Result(GameActions::Status::NotOwned, STR_CANT_REMOVE_THIS, STR_LAND_NOT_OWNED_BY_PARK);
     }
@@ -66,14 +70,14 @@ GameActions::Result BannerRemoveAction::Query() const
     auto bannerIndex = bannerElement->GetIndex();
     if (bannerIndex == BannerIndex::GetNull())
     {
-        LOG_ERROR("Invalid banner index. index = ", bannerIndex);
+        LOG_ERROR("Invalid banner index %u", bannerIndex);
         return GameActions::Result(GameActions::Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_NONE);
     }
 
     auto banner = bannerElement->GetBanner();
     if (banner == nullptr)
     {
-        LOG_ERROR("Invalid banner index. index = ", bannerIndex);
+        LOG_ERROR("Invalid banner index %u", bannerIndex);
         return GameActions::Result(GameActions::Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_NONE);
     }
 
@@ -105,14 +109,14 @@ GameActions::Result BannerRemoveAction::Execute() const
     auto bannerIndex = bannerElement->GetIndex();
     if (bannerIndex == BannerIndex::GetNull())
     {
-        LOG_ERROR("Invalid banner index. index = ", bannerIndex);
+        LOG_ERROR("Invalid banner index %u", bannerIndex);
         return GameActions::Result(GameActions::Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_NONE);
     }
 
     auto banner = bannerElement->GetBanner();
     if (banner == nullptr)
     {
-        LOG_ERROR("Invalid banner index. index = ", bannerIndex);
+        LOG_ERROR("Invalid banner index %u", bannerIndex);
         return GameActions::Result(GameActions::Status::InvalidParameters, STR_CANT_REMOVE_THIS, STR_NONE);
     }
 

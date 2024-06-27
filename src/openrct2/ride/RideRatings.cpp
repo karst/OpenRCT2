@@ -11,6 +11,7 @@
 
 #include "../Cheats.h"
 #include "../Context.h"
+#include "../GameState.h"
 #include "../OpenRCT2.h"
 #include "../interface/Window.h"
 #include "../localisation/Date.h"
@@ -24,7 +25,6 @@
 #include "Station.h"
 #include "Track.h"
 
-#include <algorithm>
 #include <iterator>
 
 using namespace OpenRCT2;
@@ -76,8 +76,6 @@ struct ShelteredEights
     uint8_t TrackShelteredEighths;
     uint8_t TotalShelteredEighths;
 };
-
-static RideRatingUpdateStates gRideRatingUpdateStates;
 
 // Amount of updates allowed per updating state on the current tick.
 // The total amount would be MaxRideRatingSubSteps * RideRatingMaxUpdateStates which
@@ -153,17 +151,13 @@ static void RideRatingsApplyRequirementStations(RatingTuple& ratings, const Ride
 static void RideRatingsApplyRequirementSplashdown(RatingTuple& ratings, const Ride& ride, RatingsModifier modifier);
 static void RideRatingsApplyPenaltyLateralGs(RatingTuple& ratings, const Ride& ride, RatingsModifier modifier);
 
-RideRatingUpdateStates& RideRatingGetUpdateStates()
-{
-    return gRideRatingUpdateStates;
-}
-
 void RideRatingResetUpdateStates()
 {
     RideRatingUpdateState nullState{};
     nullState.State = RIDE_RATINGS_STATE_FIND_NEXT_RIDE;
 
-    std::fill(gRideRatingUpdateStates.begin(), gRideRatingUpdateStates.end(), nullState);
+    auto& updateStates = GetGameState().RideRatingUpdateStates;
+    std::fill(updateStates.begin(), updateStates.end(), nullState);
 }
 
 /**
@@ -197,7 +191,7 @@ void RideRatingsUpdateAll()
     if (gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR)
         return;
 
-    for (auto& updateState : gRideRatingUpdateStates)
+    for (auto& updateState : GetGameState().RideRatingUpdateStates)
     {
         for (size_t i = 0; i < MaxRideRatingUpdateSubSteps; ++i)
         {
@@ -237,7 +231,8 @@ static void ride_ratings_update_state(RideRatingUpdateState& state)
 
 static bool RideRatingIsUpdatingRide(RideId id)
 {
-    return std::any_of(gRideRatingUpdateStates.begin(), gRideRatingUpdateStates.end(), [id](auto& state) {
+    const auto& updateStates = GetGameState().RideRatingUpdateStates;
+    return std::any_of(updateStates.begin(), updateStates.end(), [id](auto& state) {
         return state.CurrentRide == id && state.State != RIDE_RATINGS_STATE_FIND_NEXT_RIDE;
     });
 }
@@ -1055,12 +1050,12 @@ static void RideRatingsCalculate(RideRatingUpdateState& state, Ride& ride)
     ride.window_invalidate_flags |= RIDE_INVALIDATE_RIDE_INCOME;
 
 #ifdef ORIGINAL_RATINGS
-    if (ride.ratings.excitement != -1)
+    if (ride.ratings.Excitement != -1)
     {
         // Address underflows allowed by original RCT2 code
-        ride.ratings.excitement = max(0, ride.ratings.excitement);
-        ride.ratings.intensity = max(0, ride.ratings.intensity);
-        ride.ratings.nausea = max(0, ride.ratings.nausea);
+        ride.ratings.Excitement = std::max<uint16_t>(0, ride.ratings.Excitement);
+        ride.ratings.Intensity = std::max<uint16_t>(0, ride.ratings.Intensity);
+        ride.ratings.Nausea = std::max<uint16_t>(0, ride.ratings.Nausea);
     }
 #endif
 
@@ -1145,7 +1140,7 @@ static void RideRatingsCalculateValue(Ride& ride)
         + (((ride.nausea * ratingsMultipliers.Nausea) * 32) >> 15);
 
     int32_t monthsOld = 0;
-    if (!gCheatsDisableRideValueAging)
+    if (!GetGameState().Cheats.DisableRideValueAging)
     {
         monthsOld = ride.GetAge();
     }
@@ -1303,14 +1298,14 @@ static void RideRatingsApplyAdjustments(const Ride& ride, RatingTuple& ratings)
             if (totalAirTime >= 96)
             {
                 totalAirTime -= 96;
-                ratings.excitement -= totalAirTime / 8;
-                ratings.nausea += totalAirTime / 16;
+                ratings.Excitement -= totalAirTime / 8;
+                ratings.Nausea += totalAirTime / 16;
             }
         }
         else
         {
-            ratings.excitement += totalAirTime / 8;
-            ratings.nausea += totalAirTime / 16;
+            ratings.Excitement += totalAirTime / 8;
+            ratings.Nausea += totalAirTime / 16;
         }
     }
 #else
@@ -1697,9 +1692,9 @@ static RatingTuple ride_ratings_get_sheltered_ratings(const Ride& ride)
 static RatingTuple ride_ratings_get_gforce_ratings(const Ride& ride)
 {
     RatingTuple result = {
-        /* .excitement = */ 0,
-        /* .intensity = */ 0,
-        /* .nausea = */ 0,
+        .Excitement = 0,
+        .Intensity = 0,
+        .Nausea = 0,
     };
 
     // Apply maximum positive G force factor
@@ -1722,14 +1717,14 @@ static RatingTuple ride_ratings_get_gforce_ratings(const Ride& ride)
 #ifdef ORIGINAL_RATINGS
     if (ride.max_lateral_g > FIXED_2DP(2, 80))
     {
-        result.intensity += FIXED_2DP(3, 75);
-        result.nausea += FIXED_2DP(2, 00);
+        result.Intensity += FIXED_2DP(3, 75);
+        result.Nausea += FIXED_2DP(2, 00);
     }
     if (ride.max_lateral_g > FIXED_2DP(3, 10))
     {
-        result.excitement /= 2;
-        result.intensity += FIXED_2DP(8, 50);
-        result.nausea += FIXED_2DP(4, 00);
+        result.Excitement /= 2;
+        result.Intensity += FIXED_2DP(8, 50);
+        result.Nausea += FIXED_2DP(4, 00);
     }
 #endif
 
@@ -1814,9 +1809,10 @@ static int32_t ride_ratings_get_scenery_score(const Ride& ride)
     // Count surrounding scenery items
     int32_t numSceneryItems = 0;
     auto tileLocation = TileCoordsXY(location);
-    for (int32_t yy = std::max(tileLocation.y - 5, 0); yy <= std::min(tileLocation.y + 5, gMapSize.y - 1); yy++)
+    auto& gameState = GetGameState();
+    for (int32_t yy = std::max(tileLocation.y - 5, 0); yy <= std::min(tileLocation.y + 5, gameState.MapSize.y - 1); yy++)
     {
-        for (int32_t xx = std::max(tileLocation.x - 5, 0); xx <= std::min(tileLocation.x + 5, gMapSize.x - 1); xx++)
+        for (int32_t xx = std::max(tileLocation.x - 5, 0); xx <= std::min(tileLocation.x + 5, gameState.MapSize.x - 1); xx++)
         {
             // Count scenery items on this tile
             TileElement* tileElement = MapGetFirstElementAt(TileCoordsXY{ xx, yy });
@@ -2103,7 +2099,7 @@ static void RideRatingsApplyBonusLaunchedFreefallSpecial(
     RideRatingsAdd(ratings, excitement, 0, 0);
 
 #ifdef ORIGINAL_RATINGS
-    RideRatingsApplyBonusOperationOptionFreefall(&ratings, ride, modifier);
+    RideRatingsApplyBonusOperationOptionFreefall(ratings, ride, modifier);
 #else
     // Only apply "launch speed" effects when the setting can be modified
     if (ride.mode == RideMode::UpwardLaunch)
@@ -2255,6 +2251,7 @@ static void RideRatingsApplyRequirementSplashdown(RatingTuple& ratings, const Ri
     }
 }
 
+#ifndef ORIGINAL_RATINGS
 static RatingTuple ride_ratings_get_excessive_lateral_g_penalty(const Ride& ride)
 {
     RatingTuple result{};
@@ -2284,6 +2281,7 @@ static RatingTuple ride_ratings_get_excessive_lateral_g_penalty(const Ride& ride
     }
     return result;
 }
+#endif
 
 static void RideRatingsApplyPenaltyLateralGs(RatingTuple& ratings, const Ride& ride, RatingsModifier modifier)
 {

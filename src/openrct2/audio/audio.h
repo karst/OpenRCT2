@@ -23,10 +23,10 @@ struct CoordsXYZ;
 
 namespace OpenRCT2::Audio
 {
-    constexpr size_t MaxDeviceNameSize = 256;
-    constexpr size_t MaxVehicleSounds = 14;
-    constexpr size_t MaxDefaultMusic = 46;
-    constexpr uint16_t SoundIdNull = 0xFFFF;
+    constexpr size_t kMaxDeviceNameSize = 256;
+    constexpr size_t kMaxVehicleSounds = 14;
+    constexpr size_t kMaxDefaultMusic = 46;
+    constexpr uint16_t kSoundIdNull = 0xFFFF;
 
 #define AUDIO_PLAY_AT_CENTRE 0x8000
 
@@ -130,27 +130,30 @@ namespace OpenRCT2::Audio
         CrowdAmbience,
         LiftRMC,
         TrackFrictionRMC,
+        LiftFlume,
         NoScream = 254,
         Null = 255
     };
 
-    constexpr uint8_t RCT2SoundCount = static_cast<uint32_t>(SoundId::Portcullis) + 1;
+    constexpr uint8_t kRCT2SoundCount = static_cast<uint32_t>(SoundId::Portcullis) + 1;
 
     namespace AudioObjectIdentifiers
     {
-        constexpr std::string_view RCT1Title = "rct1.audio.title";
-        constexpr std::string_view RCT2Base = "rct2.audio.base";
-        constexpr std::string_view RCTCBase = "rct2.audio.base.rctc";
-        constexpr std::string_view RCT2Title = "rct2.audio.title";
-        constexpr std::string_view OpenRCT2Title = "openrct2.audio.title";
-        constexpr std::string_view RCT2Circus = "rct2.audio.circus";
-        constexpr std::string_view OpenRCT2Additional = "openrct2.audio.additional";
+        constexpr std::string_view kRCT1Title = "rct1.audio.title";
+        // virtual name, used by either RCT2Base or RCTCBase, depending on which one is loaded.
+        constexpr std::string_view kRCT2 = "rct2.audio.base";
+        constexpr std::string_view kRCT2Base = "rct2.audio.base.rct2";
+        constexpr std::string_view kRCTCBase = "rct2.audio.base.rctc";
+        constexpr std::string_view kRCT2Title = "rct2.audio.title";
+        constexpr std::string_view kOpenRCT2Title = "openrct2.audio.title";
+        constexpr std::string_view kRCT2Circus = "rct2.audio.circus";
+        constexpr std::string_view kOpenRCT2Additional = "openrct2.audio.additional";
     } // namespace AudioObjectIdentifiers
 
     extern bool gGameSoundsOff;
     extern int32_t gVolumeAdjustZoom;
 
-    extern VehicleSound gVehicleSoundList[MaxVehicleSounds];
+    extern VehicleSound gVehicleSoundList[kMaxVehicleSounds];
 
     /**
      * Returns false when no audio device is available or when audio is turned off, otherwise true.
@@ -261,10 +264,10 @@ namespace OpenRCT2::Audio
     AudioObject* GetBaseAudioObject();
 
     std::shared_ptr<IAudioChannel> CreateAudioChannel(
-        SoundId soundId, bool loop = false, int32_t volume = MIXER_VOLUME_MAX, float pan = 0.5f, double rate = 1,
+        SoundId soundId, bool loop = false, int32_t volume = kMixerVolumeMax, float pan = 0.5f, double rate = 1,
         bool forget = false);
     std::shared_ptr<IAudioChannel> CreateAudioChannel(
-        IAudioSource* source, MixerGroup group, bool loop = false, int32_t volume = MIXER_VOLUME_MAX, float pan = 0.5f,
+        IAudioSource* source, MixerGroup group, bool loop = false, int32_t volume = kMixerVolumeMax, float pan = 0.5f,
         double rate = 1, bool forget = false);
 
     int32_t DStoMixerVolume(int32_t volume);

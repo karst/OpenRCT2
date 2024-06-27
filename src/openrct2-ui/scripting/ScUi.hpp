@@ -18,7 +18,6 @@
 #    include "ScViewport.hpp"
 #    include "ScWindow.hpp"
 
-#    include <algorithm>
 #    include <memory>
 #    include <openrct2/Context.h>
 #    include <openrct2/Input.h>
@@ -188,7 +187,7 @@ namespace OpenRCT2::Scripting
             {
                 if (id.type() == DukValue::Type::NUMBER)
                 {
-                    WindowCloseByNumber(cls, id.as_int());
+                    WindowCloseByNumber(cls, id.as_uint());
                 }
                 else
                 {
@@ -206,8 +205,8 @@ namespace OpenRCT2::Scripting
         {
             if (a.type() == DukValue::Type::NUMBER)
             {
-                auto index = a.as_int();
-                auto i = 0;
+                auto index = a.as_uint();
+                size_t i = 0;
                 for (const auto& w : g_window_list)
                 {
                     if (i == index)
@@ -231,7 +230,7 @@ namespace OpenRCT2::Scripting
 
         void showError(const std::string& title, const std::string& message)
         {
-            WindowErrorOpen(title, message);
+            ErrorOpen(title, message);
         }
 
         void showTextInput(const DukValue& desc)
@@ -282,7 +281,7 @@ namespace OpenRCT2::Scripting
                 else
                     throw DukException();
 
-                WindowLoadsaveOpen(
+                LoadsaveOpen(
                     loadSaveType, defaultPath,
                     [this, plugin, callback](int32_t result, std::string_view path) {
                         if (result == MODAL_RESULT_OK)
@@ -304,7 +303,7 @@ namespace OpenRCT2::Scripting
             auto plugin = _scriptEngine.GetExecInfo().GetCurrentPlugin();
             auto callback = desc["callback"];
 
-            WindowScenarioselectOpen([this, plugin, callback](std::string_view path) {
+            ScenarioselectOpen([this, plugin, callback](std::string_view path) {
                 auto dukValue = GetScenarioFile(path);
                 _scriptEngine.ExecutePluginCall(plugin, callback, { dukValue }, false);
             });

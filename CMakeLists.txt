@@ -55,7 +55,7 @@ endif ()
 include(CheckCXXCompilerFlag)
 include(GNUInstallDirs)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}")
@@ -64,21 +64,21 @@ set(TITLE_SEQUENCE_VERSION "0.4.6")
 set(TITLE_SEQUENCE_URL  "https://github.com/OpenRCT2/title-sequences/releases/download/v${TITLE_SEQUENCE_VERSION}/title-sequences.zip")
 set(TITLE_SEQUENCE_SHA1 "80fefc6ebbabc42a6f4703412daa5c62f661420d")
 
-set(OBJECTS_VERSION "1.3.13")
+set(OBJECTS_VERSION "1.4.6")
 set(OBJECTS_URL  "https://github.com/OpenRCT2/objects/releases/download/v${OBJECTS_VERSION}/objects.zip")
-set(OBJECTS_SHA1 "15a60424d5f4f0b94ac07763b6967ba0e6ae3a7d")
+set(OBJECTS_SHA1 "49852246ba3d3a44f143e0c4de8f4d2e8f950c10")
 
-set(OPENSFX_VERSION "1.0.3")
+set(OPENSFX_VERSION "1.0.5")
 set(OPENSFX_URL  "https://github.com/OpenRCT2/OpenSoundEffects/releases/download/v${OPENSFX_VERSION}/opensound.zip")
-set(OPENSFX_SHA1 "ffec5a97bd5035860c4c9a43fe32cf51886478e3")
+set(OPENSFX_SHA1 "b1b1f1b241d2cbff63a1889c4dc5a09bdf769bfb")
 
 set(OPENMSX_VERSION "1.5")
 set(OPENMSX_URL  "https://github.com/OpenRCT2/OpenMusic/releases/download/v${OPENMSX_VERSION}/openmusic.zip")
 set(OPENMSX_SHA1 "f3c707e576281758637598ce68880416891fe5f9")
 
-set(REPLAYS_VERSION "0.0.78")
+set(REPLAYS_VERSION "0.0.79")
 set(REPLAYS_URL  "https://github.com/OpenRCT2/replays/releases/download/v${REPLAYS_VERSION}/replays.zip")
-set(REPLAYS_SHA1 "31C5D07EED8481D5C6D57F9E4FE9443AAEDE7739")
+set(REPLAYS_SHA1 "34457077DBA9448A08FF6AC95E5CB92D65252E0C")
 
 option(FORCE32 "Force 32-bit build. It will add `-m32` to compiler flags.")
 option(WITH_TESTS "Build tests")
@@ -125,12 +125,13 @@ if (APPIMAGE)
 endif ()
 
 if (MACOS_USE_DEPENDENCIES)
+    message("Using OpenRCT2 dependencies instead of system libraries")
     # if we're building on macOS, then we need the dependencies
     include(cmake/download.cmake)
     
-    set(MACOS_DYLIBS_VERSION "33")
+    set(MACOS_DYLIBS_VERSION "35")
     set(MACOS_DYLIBS_ZIPFILE "openrct2-libs-v${MACOS_DYLIBS_VERSION}-universal-macos-dylibs.zip")
-    set(MACOS_DYLIBS_SHA1 "8b47f3a3603f3ad3a1ee292033d0daffe9a3e43c")
+    set(MACOS_DYLIBS_SHA1 "bed4340c32b6dbee9634ceaf19cb6b49a837aead")
     set(MACOS_DYLIBS_DIR "${ROOT_DIR}/lib/macos")
     set(MACOS_DYLIBS_URL "https://github.com/OpenRCT2/Dependencies/releases/download/v${MACOS_DYLIBS_VERSION}/${MACOS_DYLIBS_ZIPFILE}")
 
@@ -147,6 +148,7 @@ if (MACOS_USE_DEPENDENCIES)
     # if we're making the OpenRCT2.app bundle, rpath will be handled by fixup_bundle
     # if we're building the CLI executable, we need to do it ourselves
     if (NOT MACOS_BUNDLE)
+        message("Setting rpath for macOS dylibs")
         # the RPATH to be used when installing, but only if it's not a system directory
         list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
         if("${isSystemDir}" STREQUAL "-1")
@@ -277,6 +279,9 @@ if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244") # C4244: 'conversion_type': conversion from 'type1' to 'type2', possible loss of data
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4068") # C4068: unknown pragma
 
+    # Enable char8_t<->char conversion
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:char8_t-")
+
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-D_SCL_SECURE_NO_WARNINGS)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8 AND CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
@@ -330,6 +335,9 @@ else ()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstrict-aliasing -Werror -Wundef -Wmissing-declarations -Winit-self -Wall -Wextra -Wshadow")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-missing-braces -Wno-comment -Wnonnull -Wno-unused-parameter -Wno-attributes")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG=${DEBUG_LEVEL}")
+
+    # Enable char8_t<->char conversion
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-char8_t -Wno-deprecated-declarations")
 
     if(APPLE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=objc-method-access")

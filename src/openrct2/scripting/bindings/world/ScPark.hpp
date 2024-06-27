@@ -17,7 +17,6 @@
 #    include "ScParkMessage.hpp"
 #    include "ScResearch.hpp"
 
-#    include <algorithm>
 #    include <vector>
 
 namespace OpenRCT2::Scripting
@@ -98,6 +97,8 @@ namespace OpenRCT2::Scripting
         void messages_set(const std::vector<DukValue>& value);
 
         void postMessage(DukValue message);
+
+        std::vector<int32_t> getMonthlyExpenditure(const std::string& expenditureType) const;
 
         static void Register(duk_context* ctx);
     };

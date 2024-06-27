@@ -10,6 +10,7 @@
 #include "LandLowerAction.h"
 
 #include "../Context.h"
+#include "../GameState.h"
 #include "../OpenRCT2.h"
 #include "../actions/LandSetHeightAction.h"
 #include "../audio/audio.h"
@@ -24,6 +25,7 @@
 #include "../world/Scenery.h"
 #include "../world/Surface.h"
 #include "../world/SurfaceData.h"
+#include "../world/tile_element/Slope.h"
 
 LandLowerAction::LandLowerAction(const CoordsXY& coords, MapRange range, uint8_t selectionType)
     : _coords(coords)
@@ -93,7 +95,7 @@ GameActions::Result LandLowerAction::QueryExecute(bool isExecuting) const
             if (surfaceElement == nullptr)
                 continue;
 
-            if (!(gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) && !gCheatsSandboxMode)
+            if (!(gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) && !OpenRCT2::GetGameState().Cheats.SandboxMode)
             {
                 if (!MapIsLocationInPark(CoordsXY{ x, y }))
                 {
@@ -103,9 +105,9 @@ GameActions::Result LandLowerAction::QueryExecute(bool isExecuting) const
             withinOwnership = true;
 
             uint8_t height = surfaceElement->BaseHeight;
-            if (surfaceElement->GetSlope() & TILE_ELEMENT_SURFACE_RAISED_CORNERS_MASK)
+            if (surfaceElement->GetSlope() & kTileSlopeRaisedCornersMask)
                 height += 2;
-            if (surfaceElement->GetSlope() & TILE_ELEMENT_SURFACE_DIAGONAL_FLAG)
+            if (surfaceElement->GetSlope() & kTileSlopeDiagonalFlag)
                 height += 2;
 
             if (height < maxHeight)
@@ -114,10 +116,10 @@ GameActions::Result LandLowerAction::QueryExecute(bool isExecuting) const
             height = surfaceElement->BaseHeight;
             uint8_t currentSlope = surfaceElement->GetSlope();
             uint8_t newSlope = LowerSurfaceCornerFlags(tableRow, currentSlope);
-            if (newSlope & SURFACE_STYLE_FLAG_RAISE_OR_LOWER_BASE_HEIGHT)
+            if (newSlope & kTileSlopeRaiseOrLowerBaseHeight)
                 height -= 2;
 
-            newSlope &= TILE_ELEMENT_SURFACE_SLOPE_MASK;
+            newSlope &= kTileSlopeMask;
 
             auto landSetHeightAction = LandSetHeightAction({ x, y }, height, newSlope);
             landSetHeightAction.SetFlags(GetFlags());

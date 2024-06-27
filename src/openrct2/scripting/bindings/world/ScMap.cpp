@@ -11,6 +11,7 @@
 
 #    include "ScMap.hpp"
 
+#    include "../../../GameState.h"
 #    include "../../../common.h"
 #    include "../../../entity/Balloon.h"
 #    include "../../../entity/Duck.h"
@@ -28,6 +29,7 @@
 #    include "../entity/ScEntity.hpp"
 #    include "../entity/ScGuest.hpp"
 #    include "../entity/ScLitter.hpp"
+#    include "../entity/ScParticle.hpp"
 #    include "../entity/ScStaff.hpp"
 #    include "../entity/ScVehicle.hpp"
 #    include "../ride/ScRide.hpp"
@@ -43,7 +45,7 @@ namespace OpenRCT2::Scripting
 
     DukValue ScMap::size_get() const
     {
-        return ToDuk(_context, gMapSize);
+        return ToDuk(_context, GetGameState().MapSize);
     }
 
     int32_t ScMap::numRides_get() const
@@ -160,6 +162,13 @@ namespace OpenRCT2::Scripting
                 result.push_back(GetObjectAsDukValue(_context, std::make_shared<ScStaff>(sprite->Id)));
             }
         }
+        else if (type == "crashed_vehicle_particle")
+        {
+            for (auto sprite : EntityList<VehicleCrashParticle>())
+            {
+                result.push_back(GetObjectAsDukValue(_context, std::make_shared<ScCrashedVehicleParticle>(sprite->Id)));
+            }
+        }
         else
         {
             duk_error(_context, DUK_ERR_ERROR, "Invalid entity type.");
@@ -220,6 +229,13 @@ namespace OpenRCT2::Scripting
                 result.push_back(GetObjectAsDukValue(_context, std::make_shared<ScStaff>(sprite->Id)));
             }
         }
+        else if (type == "crashed_vehicle_particle")
+        {
+            for (auto sprite : EntityTileList<VehicleCrashParticle>(pos))
+            {
+                result.push_back(GetObjectAsDukValue(_context, std::make_shared<ScCrashedVehicleParticle>(sprite->Id)));
+            }
+        }
         else
         {
             // If the given type isn't valid, throw an error
@@ -271,7 +287,7 @@ namespace OpenRCT2::Scripting
         }
         else if (type == "crashed_vehicle_particle")
         {
-            res = createEntityType<VehicleCrashParticle, ScEntity>(_context, initializer);
+            res = createEntityType<VehicleCrashParticle, ScCrashedVehicleParticle>(_context, initializer);
         }
         else if (type == "explosion_cloud")
         {
@@ -347,6 +363,8 @@ namespace OpenRCT2::Scripting
                 return GetObjectAsDukValue(_context, std::make_shared<ScGuest>(spriteId));
             case EntityType::Litter:
                 return GetObjectAsDukValue(_context, std::make_shared<ScLitter>(spriteId));
+            case EntityType::CrashedVehicleParticle:
+                return GetObjectAsDukValue(_context, std::make_shared<ScCrashedVehicleParticle>(spriteId));
             default:
                 return GetObjectAsDukValue(_context, std::make_shared<ScEntity>(spriteId));
         }

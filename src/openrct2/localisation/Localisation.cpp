@@ -7,35 +7,24 @@
  * OpenRCT2 is licensed under the GNU General Public License version 3.
  *****************************************************************************/
 
-#ifdef _WIN32
-#    include <windows.h>
-#elif defined(__ANDROID__)
-#    include <SDL.h>
-#    include <jni.h>
-
-#else
-#    include <errno.h>
-#    include <iconv.h>
-#endif // _WIN32
+#include "Localisation.h"
 
 #include "../Game.h"
 #include "../common.h"
 #include "../config/Config.h"
 #include "../core/Guard.hpp"
 #include "../core/String.hpp"
-#include "../management/Marketing.h"
 #include "../ride/Ride.h"
 #include "../util/Util.h"
+#include "Currency.h"
 #include "Date.h"
+#include "FormatCodes.h"
 #include "Formatting.h"
-#include "Localisation.h"
+#include "StringIds.h"
 
-#include <algorithm>
-#include <cmath>
 #include <cstring>
-#include <ctype.h>
-#include <iterator>
-#include <limits.h>
+
+using namespace OpenRCT2;
 
 thread_local char gCommonStringFormatBuffer[CommonTextBufferSize];
 
@@ -265,7 +254,7 @@ const StringId PeepThoughts[] = {
 };
 // clang-format on
 
-std::string FormatStringID(StringId format, const void* args)
+std::string FormatStringIDLegacy(StringId format, const void* args)
 {
     std::string buffer(256, 0);
     size_t len{};
@@ -361,7 +350,7 @@ void FormatReadableSpeed(char* buf, size_t bufSize, uint64_t sizeBytes)
 money64 StringToMoney(const char* string_to_monetise)
 {
     const char* decimal_char = LanguageGetString(STR_LOCALE_DECIMAL_POINT);
-    const CurrencyDescriptor* currencyDesc = &CurrencyDescriptors[EnumValue(gConfigGeneral.CurrencyFormat)];
+    const CurrencyDescriptor* currencyDesc = &CurrencyDescriptors[EnumValue(Config::Get().general.CurrencyFormat)];
     char processedString[128] = {};
 
     Guard::Assert(strlen(string_to_monetise) < sizeof(processedString));
@@ -382,7 +371,7 @@ money64 StringToMoney(const char* string_to_monetise)
         else if (*src_ptr == decimal_char[0])
         {
             if (hasDecSep)
-                return MONEY64_UNDEFINED;
+                return kMoney64Undefined;
             hasDecSep = true;
 
             // Replace localised decimal separator with an English one.
@@ -393,7 +382,7 @@ money64 StringToMoney(const char* string_to_monetise)
         else if (*src_ptr == '-')
         {
             if (hasMinus)
-                return MONEY64_UNDEFINED;
+                return kMoney64Undefined;
             hasMinus = true;
         }
         else
@@ -412,12 +401,12 @@ money64 StringToMoney(const char* string_to_monetise)
     *dst_ptr = '\0';
 
     if (numNumbers == 0)
-        return MONEY64_UNDEFINED;
+        return kMoney64Undefined;
 
     if (hasMinus && processedString[0] != '-')
     {
         // If there is a minus sign, it has to be at position 0 in order to be valid.
-        return MONEY64_UNDEFINED;
+        return kMoney64Undefined;
     }
 
     // Due to the nature of strstr and strtok, decimals at the very beginning will be ignored, causing
@@ -445,13 +434,13 @@ money64 StringToMoney(const char* string_to_monetise)
  */
 void MoneyToString(money64 amount, char* buffer_to_put_value_to, size_t buffer_len, bool forceDecimals)
 {
-    if (amount == MONEY64_UNDEFINED)
+    if (amount == kMoney64Undefined)
     {
         snprintf(buffer_to_put_value_to, buffer_len, "0");
         return;
     }
 
-    const CurrencyDescriptor& currencyDesc = CurrencyDescriptors[EnumValue(gConfigGeneral.CurrencyFormat)];
+    const CurrencyDescriptor& currencyDesc = CurrencyDescriptors[EnumValue(Config::Get().general.CurrencyFormat)];
 
     const char* sign = amount >= 0 ? "" : "-";
     const uint64_t a = std::abs(amount) * currencyDesc.rate;

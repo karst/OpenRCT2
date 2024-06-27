@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../Context.h"
 #include "../common.h"
 #include "Console.hpp"
 #include "DataSerialiser.h"
@@ -174,7 +175,7 @@ private:
         {
             const auto& filePath = scanResult.Files.at(i);
 
-            if (_log_levels[static_cast<uint8_t>(DiagnosticLevel::Verbose)])
+            if (_log_levels[EnumValue(DiagnosticLevel::Verbose)])
             {
                 std::lock_guard<std::mutex> lock(printLock);
                 LOG_VERBOSE("FileIndex:Indexing '%s'", filePath.c_str());
@@ -206,11 +207,12 @@ private:
 
             size_t stepSize = 100; // Handpicked, seems to work well with 4/8 cores.
 
-            std::atomic<size_t> processed = ATOMIC_VAR_INIT(0);
+            std::atomic<size_t> processed{ 0 };
 
             auto reportProgress = [&]() {
                 const size_t completed = processed;
                 Console::WriteFormat("File %5zu of %zu, done %3d%%\r", completed, totalCount, completed * 100 / totalCount);
+                OpenRCT2::GetContext()->SetProgress(static_cast<uint32_t>(completed), static_cast<uint32_t>(totalCount));
             };
 
             for (size_t rangeStart = 0; rangeStart < totalCount; rangeStart += stepSize)

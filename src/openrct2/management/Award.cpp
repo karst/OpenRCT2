@@ -9,6 +9,7 @@
 
 #include "Award.h"
 
+#include "../GameState.h"
 #include "../config/Config.h"
 #include "../entity/Guest.h"
 #include "../interface/Window.h"
@@ -21,7 +22,7 @@
 #include "../world/Park.h"
 #include "NewsItem.h"
 
-#include <algorithm>
+using namespace OpenRCT2;
 
 constexpr uint8_t NEGATIVE = 0;
 constexpr uint8_t POSITIVE = 1;
@@ -66,13 +67,6 @@ static constexpr StringId AwardNewsStrings[] = {
     STR_NEWS_ITEM_BEST_GENTLE_RIDES,
 };
 
-static std::vector<Award> _currentAwards;
-
-std::vector<Award>& GetAwards()
-{
-    return _currentAwards;
-}
-
 bool AwardIsPositive(AwardType type)
 {
     return AwardPositiveMap[EnumValue(type)];
@@ -107,7 +101,7 @@ static bool AwardIsDeservedMostUntidy(int32_t activeAwardTypes)
         }
     }
 
-    return (negativeCount > gNumGuestsInPark / 16);
+    return (negativeCount > GetGameState().NumGuestsInPark / 16);
 }
 
 /** More than 1/64 of the total guests must be thinking tidy thoughts and less than 6 guests thinking untidy thoughts. */
@@ -139,7 +133,7 @@ static bool AwardIsDeservedMostTidy(int32_t activeAwardTypes)
         }
     }
 
-    return (negativeCount <= 5 && positiveCount > gNumGuestsInPark / 64);
+    return (negativeCount <= 5 && positiveCount > GetGameState().NumGuestsInPark / 64);
 }
 
 /** At least 6 open roller coasters. */
@@ -172,19 +166,21 @@ static bool AwardIsDeservedBestRollercoasters([[maybe_unused]] int32_t activeAwa
 /** Entrance fee is 0.10 less than half of the total ride value. */
 static bool AwardIsDeservedBestValue(int32_t activeAwardTypes)
 {
+    auto& gameState = GetGameState();
+
     if (activeAwardTypes & EnumToFlag(AwardType::WorstValue))
         return false;
 
     if (activeAwardTypes & EnumToFlag(AwardType::MostDisappointing))
         return false;
 
-    if ((gParkFlags & PARK_FLAGS_NO_MONEY) || !ParkEntranceFeeUnlocked())
+    if ((gameState.Park.Flags & PARK_FLAGS_NO_MONEY) || !Park::EntranceFeeUnlocked())
         return false;
 
-    if (gTotalRideValueForMoney < 10.00_GBP)
+    if (gameState.TotalRideValueForMoney < 10.00_GBP)
         return false;
 
-    if (ParkGetEntranceFee() + 0.10_GBP >= gTotalRideValueForMoney / 2)
+    if (Park::GetEntranceFee() + 0.10_GBP >= gameState.TotalRideValueForMoney / 2)
         return false;
 
     return true;
@@ -220,21 +216,23 @@ static bool AwardIsDeservedMostBeautiful(int32_t activeAwardTypes)
         }
     }
 
-    return (negativeCount <= 15 && positiveCount > gNumGuestsInPark / 128);
+    return (negativeCount <= 15 && positiveCount > GetGameState().NumGuestsInPark / 128);
 }
 
 /** Entrance fee is more than total ride value. */
 static bool AwardIsDeservedWorstValue(int32_t activeAwardTypes)
 {
+    auto& gameState = GetGameState();
+
     if (activeAwardTypes & EnumToFlag(AwardType::BestValue))
         return false;
-    if (gParkFlags & PARK_FLAGS_NO_MONEY)
+    if (gameState.Park.Flags & PARK_FLAGS_NO_MONEY)
         return false;
 
-    const auto parkEntranceFee = ParkGetEntranceFee();
+    const auto parkEntranceFee = Park::GetEntranceFee();
     if (parkEntranceFee == 0.00_GBP)
         return false;
-    if (parkEntranceFee <= gTotalRideValueForMoney)
+    if (parkEntranceFee <= gameState.TotalRideValueForMoney)
         return false;
     return true;
 }
@@ -308,7 +306,7 @@ static bool AwardIsDeservedBestFood(int32_t activeAwardTypes)
         }
     }
 
-    if (shops < 7 || uniqueShops < 4 || shops < gNumGuestsInPark / 128)
+    if (shops < 7 || uniqueShops < 4 || shops < GetGameState().NumGuestsInPark / 128)
         return false;
 
     // Count hungry peeps
@@ -353,7 +351,7 @@ static bool AwardIsDeservedWorstFood(int32_t activeAwardTypes)
         }
     }
 
-    if (uniqueShops > 2 || shops > gNumGuestsInPark / 256)
+    if (uniqueShops > 2 || shops > GetGameState().NumGuestsInPark / 256)
         return false;
 
     // Count hungry peeps
@@ -385,7 +383,7 @@ static bool AwardIsDeservedBestToilets([[maybe_unused]] int32_t activeAwardTypes
         return false;
 
     // At least one open toilet for every 128 guests
-    if (numToilets < gNumGuestsInPark / 128u)
+    if (numToilets < GetGameState().NumGuestsInPark / 128u)
         return false;
 
     // Count number of guests who are thinking they need the toilet
@@ -407,7 +405,7 @@ static bool AwardIsDeservedMostDisappointing(int32_t activeAwardTypes)
 {
     if (activeAwardTypes & EnumToFlag(AwardType::BestValue))
         return false;
-    if (gParkRating > 650)
+    if (GetGameState().Park.Rating > 650)
         return false;
 
     // Count the number of disappointing rides
@@ -595,7 +593,7 @@ static bool AwardIsDeserved(AwardType awardType, int32_t activeAwardTypes)
 
 void AwardReset()
 {
-    _currentAwards.clear();
+    GetGameState().CurrentAwards.clear();
 }
 
 /**
@@ -606,32 +604,33 @@ void AwardUpdateAll()
 {
     PROFILED_FUNCTION();
 
+    auto& currentAwards = GetGameState().CurrentAwards;
     // Decrease award times
-    for (auto& award : _currentAwards)
+    for (auto& award : currentAwards)
     {
         --award.Time;
     }
     // Remove any 0 time awards
     auto res = std::remove_if(
-        std::begin(_currentAwards), std::end(_currentAwards), [](const Award& award) { return award.Time == 0; });
-    if (res != std::end(_currentAwards))
+        std::begin(currentAwards), std::end(currentAwards), [](const Award& award) { return award.Time == 0; });
+    if (res != std::end(currentAwards))
     {
-        _currentAwards.erase(res, std::end(_currentAwards));
+        currentAwards.erase(res, std::end(currentAwards));
         WindowInvalidateByClass(WindowClass::ParkInformation);
     }
 
     // Only add new awards if park is open
-    if (gParkFlags & PARK_FLAGS_PARK_OPEN)
+    if (GetGameState().Park.Flags & PARK_FLAGS_PARK_OPEN)
     {
         // Set active award types as flags
         int32_t activeAwardTypes = 0;
-        for (auto& award : _currentAwards)
+        for (auto& award : currentAwards)
         {
             activeAwardTypes |= (1 << EnumValue(award.Type));
         }
 
         // Check if there was a free award entry
-        if (_currentAwards.size() < OpenRCT2::Limits::MaxAwards)
+        if (currentAwards.size() < OpenRCT2::Limits::kMaxAwards)
         {
             // Get a random award type not already active
             AwardType awardType;
@@ -644,8 +643,8 @@ void AwardUpdateAll()
             if (AwardIsDeserved(awardType, activeAwardTypes))
             {
                 // Add award
-                _currentAwards.push_back(Award{ 5u, awardType });
-                if (gConfigNotifications.ParkAward)
+                currentAwards.push_back(Award{ 5u, awardType });
+                if (Config::Get().notifications.ParkAward)
                 {
                     News::AddItemToQueue(News::ItemType::Award, AwardNewsStrings[EnumValue(awardType)], 0, {});
                 }

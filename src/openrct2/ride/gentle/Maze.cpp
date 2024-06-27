@@ -12,8 +12,11 @@
 #include "../../core/Numerics.hpp"
 #include "../../interface/Viewport.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/WoodenSupports.h"
 #include "../../paint/tile_element/Paint.Surface.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
+#include "../../paint/track/Support.h"
 #include "../../sprites.h"
 #include "../../world/Map.h"
 #include "../Ride.h"
@@ -64,9 +67,11 @@ static void MazePaintSetup(
     auto imageId = GetStationColourScheme(session, trackElement).WithIndex(SPR_TERRAIN_DIRT);
     PaintAddImageAsParent(session, imageId, { 0, 0, height }, { 32, 32, 0 });
 
-    WoodenASupportsPaintSetup(session, (rotation & 1) ? 0 : 1, 0, height, GetShopSupportColourScheme(session, trackElement));
+    WoodenASupportsPaintSetupRotated(
+        session, WoodenSupportType::Truss, WoodenSupportSubType::NwSe, rotation, height,
+        GetShopSupportColourScheme(session, trackElement));
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL & ~SEGMENT_C4, 0xFFFF, 0);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll & ~EnumToFlag(PaintSegment::centre), 0xFFFF, 0);
 
     int32_t baseImageId = 0;
     switch (ride.track_colour[0].supports)
@@ -176,10 +181,10 @@ static void MazePaintSetup(
         imageId = baseImage.WithIndexOffset(SprMazeOffsetColumnCentre);
         PaintAddImageAsParent(session, imageId, { 14, 14, height }, { { 15, 15, height + 2 }, { 2, 2, 8 } });
 
-        PaintUtilSetSegmentSupportHeight(session, SEGMENT_C4, height + 12, 0x20);
+        PaintUtilSetSegmentSupportHeight(session, EnumToFlag(PaintSegment::centre), height + 12, 0x20);
     }
 
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 /**

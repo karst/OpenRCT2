@@ -11,6 +11,7 @@
 
 #    include "NetworkServerAdvertiser.h"
 
+#    include "../GameState.h"
 #    include "../config/Config.h"
 #    include "../core/Console.hpp"
 #    include "../core/Guard.hpp"
@@ -32,6 +33,8 @@
 #    include <memory>
 #    include <random>
 #    include <string>
+
+using namespace OpenRCT2;
 
 enum class MasterServerStatus
 {
@@ -89,7 +92,7 @@ public:
     {
         UpdateLAN();
 #    ifndef DISABLE_HTTP
-        if (gConfigNetwork.Advertise)
+        if (Config::Get().network.Advertise)
         {
             UpdateWAN();
         }
@@ -104,7 +107,7 @@ private:
         {
             if (_lanListener->GetStatus() != SocketStatus::Listening)
             {
-                _lanListener->Listen(NETWORK_LAN_BROADCAST_PORT);
+                _lanListener->Listen(kNetworkLanBroadcastPort);
             }
             else
             {
@@ -116,7 +119,7 @@ private:
                 {
                     std::string sender = endpoint->GetHostname();
                     LOG_VERBOSE("Received %zu bytes from %s on LAN broadcast port", recievedBytes, sender.c_str());
-                    if (String::Equals(buffer, NETWORK_LAN_BROADCAST_MSG))
+                    if (String::Equals(buffer, kNetworkLanBroadcastMsg))
                     {
                         auto body = GetBroadcastJson();
                         auto bodyDump = body.dump();
@@ -179,9 +182,9 @@ private:
             { "port", _port },
         };
 
-        if (!gConfigNetwork.AdvertiseAddress.empty())
+        if (!Config::Get().network.AdvertiseAddress.empty())
         {
-            body["address"] = gConfigNetwork.AdvertiseAddress;
+            body["address"] = Config::Get().network.AdvertiseAddress;
         }
 
         request.body = body.dump();
@@ -298,15 +301,20 @@ private:
             { "players", numPlayers },
         };
 
-        auto& date = GetDate();
-        json_t mapSize = { { "x", gMapSize.x - 2 }, { "y", gMapSize.y - 2 } };
+        const auto& gameState = GetGameState();
+        const auto& date = GetDate();
+        json_t mapSize = { { "x", gameState.MapSize.x - 2 }, { "y", gameState.MapSize.y - 2 } };
         json_t gameInfo = {
-            { "mapSize", mapSize },         { "day", date.GetMonthTicks() }, { "month", date.GetMonthsElapsed() },
-            { "guests", gNumGuestsInPark }, { "parkValue", gParkValue },
+            { "mapSize", mapSize },
+            { "day", date.GetMonthTicks() },
+            { "month", date.GetMonthsElapsed() },
+            { "guests", gameState.NumGuestsInPark },
+            { "parkValue", gameState.Park.Value },
         };
-        if (!(gParkFlags & PARK_FLAGS_NO_MONEY))
+
+        if (!(gameState.Park.Flags & PARK_FLAGS_NO_MONEY))
         {
-            gameInfo["cash"] = gCash;
+            gameInfo["cash"] = gameState.Cash;
         }
 
         root["gameInfo"] = gameInfo;
@@ -337,9 +345,9 @@ private:
     static std::string GetMasterServerUrl()
     {
         std::string result = OPENRCT2_MASTER_SERVER_URL;
-        if (!gConfigNetwork.MasterServerUrl.empty())
+        if (!Config::Get().network.MasterServerUrl.empty())
         {
-            result = gConfigNetwork.MasterServerUrl;
+            result = Config::Get().network.MasterServerUrl;
         }
         return result;
     }

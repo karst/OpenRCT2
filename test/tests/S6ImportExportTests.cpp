@@ -18,7 +18,6 @@
 #include <openrct2/OpenRCT2.h>
 #include <openrct2/ParkImporter.h>
 #include <openrct2/audio/AudioContext.h>
-#include <openrct2/config/Config.h>
 #include <openrct2/core/Crypt.h>
 #include <openrct2/core/File.h>
 #include <openrct2/core/MemoryStream.h>
@@ -83,7 +82,10 @@ static bool ImportS6(MemoryStream& stream, std::unique_ptr<IContext>& context, b
     auto importer = ParkImporter::CreateS6(context->GetObjectRepository());
     auto loadResult = importer->LoadFromStream(&stream, false);
     objManager.LoadObjects(loadResult.RequiredObjects);
-    importer->Import();
+
+    // TODO: Have a separate GameState and exchange once loaded.
+    auto& gameState = GetGameState();
+    importer->Import(gameState);
 
     GameInit(retainSpatialIndices);
 
@@ -99,7 +101,10 @@ static bool ImportPark(MemoryStream& stream, std::unique_ptr<IContext>& context,
     auto importer = ParkImporter::CreateParkFile(context->GetObjectRepository());
     auto loadResult = importer->LoadFromStream(&stream, false);
     objManager.LoadObjects(loadResult.RequiredObjects);
-    importer->Import();
+
+    // TODO: Have a separate GameState and exchange once loaded.
+    auto& gameState = GetGameState();
+    importer->Import(gameState);
 
     GameInit(retainSpatialIndices);
 
@@ -112,7 +117,9 @@ static bool ExportSave(MemoryStream& stream, std::unique_ptr<IContext>& context)
 
     auto exporter = std::make_unique<ParkFileExporter>();
     exporter->ExportObjectsList = objManager.GetPackableObjects();
-    exporter->Export(stream);
+
+    auto& gameState = GetGameState();
+    exporter->Export(gameState, stream);
 
     return true;
 }
@@ -123,17 +130,16 @@ static void RecordGameStateSnapshot(std::unique_ptr<IContext>& context, MemorySt
 
     auto& snapshot = snapshots->CreateSnapshot();
     snapshots->Capture(snapshot);
-    snapshots->LinkSnapshot(snapshot, gCurrentTicks, ScenarioRandState().s0);
+    snapshots->LinkSnapshot(snapshot, GetGameState().CurrentTicks, ScenarioRandState().s0);
     DataSerialiser snapShotDs(true, snapshotStream);
     snapshots->SerialiseSnapshot(snapshot, snapShotDs);
 }
 
 static void AdvanceGameTicks(uint32_t ticks, std::unique_ptr<IContext>& context)
 {
-    auto* gameState = context->GetGameState();
     for (uint32_t i = 0; i < ticks; i++)
     {
-        gameState->UpdateLogic();
+        gameStateUpdateLogic();
     }
 }
 

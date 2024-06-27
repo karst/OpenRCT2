@@ -45,15 +45,18 @@ GameActions::Result StaffSetOrdersAction::Query() const
 {
     if (_spriteIndex.ToUnderlying() >= MAX_ENTITIES || _spriteIndex.IsNull())
     {
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_NONE, STR_NONE);
+        LOG_ERROR("Invalid sprite index %u", _spriteIndex);
+        return GameActions::Result(
+            GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
     }
 
     auto* staff = TryGetEntity<Staff>(_spriteIndex);
     if (staff == nullptr
         || (staff->AssignedStaffType != StaffType::Handyman && staff->AssignedStaffType != StaffType::Mechanic))
     {
-        LOG_WARNING("Invalid game command for sprite %u", _spriteIndex);
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_NONE, STR_NONE);
+        LOG_ERROR("Staff orders can't be changed for staff of type %u", _spriteIndex);
+        return GameActions::Result(
+            GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_ACTION_INVALID_FOR_THAT_STAFF_TYPE);
     }
 
     return GameActions::Result();
@@ -64,8 +67,8 @@ GameActions::Result StaffSetOrdersAction::Execute() const
     auto* staff = TryGetEntity<Staff>(_spriteIndex);
     if (staff == nullptr)
     {
-        LOG_WARNING("Invalid game command for sprite %u", _spriteIndex);
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_NONE, STR_NONE);
+        LOG_ERROR("Staff entity not found for spriteIndex %u", _spriteIndex);
+        return GameActions::Result(GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_STAFF_NOT_FOUND);
     }
     staff->StaffOrders = _ordersId;
 

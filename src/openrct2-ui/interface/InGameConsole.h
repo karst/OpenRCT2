@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <deque>
 #include <openrct2/core/String.hpp>
 #include <openrct2/interface/InteractiveConsole.h>
 #include <openrct2/localisation/FormatCodes.h>
@@ -26,6 +27,7 @@ namespace OpenRCT2::Ui
         static constexpr int32_t CONSOLE_EDGE_PADDING = 4;
         static constexpr int32_t CONSOLE_CARET_WIDTH = 6;
 
+        bool _isInitialised = false;
         bool _isOpen = false;
         ScreenCoordsXY _consoleTopLeft;
         ScreenCoordsXY _consoleBottomRight;
@@ -45,7 +47,7 @@ namespace OpenRCT2::Ui
         int32_t _caretScreenPosX = 0;
 
     public:
-        InGameConsole();
+        InGameConsole() = default;
         InGameConsole(const InGameConsole& src) = delete;
 
         bool IsOpen() const
@@ -71,6 +73,7 @@ namespace OpenRCT2::Ui
         void ClearInput();
         void ClearLine();
         void HistoryAdd(const u8string& src);
+        void WriteInitial();
         void WritePrompt();
         void ScrollToEnd();
         void Invalidate() const;

@@ -11,6 +11,8 @@
 
 #include "../config/Config.h"
 
+using namespace OpenRCT2;
+
 GameSetSpeedAction::GameSetSpeedAction(int32_t speed)
     : _speed(speed)
 {
@@ -39,8 +41,9 @@ GameActions::Result GameSetSpeedAction::Query() const
 
     if (!IsValidSpeed(_speed))
     {
-        LOG_WARNING("Invalid game command for speed %u", _speed);
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_NONE, STR_NONE);
+        LOG_ERROR("Invalid speed %u", _speed);
+        return GameActions::Result(
+            GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
     }
 
     return res;
@@ -52,8 +55,9 @@ GameActions::Result GameSetSpeedAction::Execute() const
 
     if (!IsValidSpeed(_speed))
     {
-        LOG_WARNING("Invalid game command for speed %u", _speed);
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_NONE, STR_NONE);
+        LOG_ERROR("Invalid speed %u", _speed);
+        return GameActions::Result(
+            GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
     }
 
     gGameSpeed = _speed;
@@ -64,5 +68,5 @@ GameActions::Result GameSetSpeedAction::Execute() const
 
 bool GameSetSpeedAction::IsValidSpeed(int32_t speed) const
 {
-    return (speed >= 1 && speed <= 4) || (gConfigGeneral.DebuggingTools && speed == 8);
+    return (speed >= 1 && speed <= 4) || (Config::Get().general.DebuggingTools && speed == 8);
 }

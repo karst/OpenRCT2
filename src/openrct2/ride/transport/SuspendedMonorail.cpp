@@ -11,13 +11,19 @@
 #include "../../entity/EntityRegistry.h"
 #include "../../interface/Viewport.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/MetalSupports.h"
 #include "../../paint/tile_element/Paint.TileElement.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
 #include "../../sprites.h"
 #include "../../world/Map.h"
 #include "../RideData.h"
 #include "../TrackData.h"
 #include "../TrackPaint.h"
+
+static constexpr MetalSupportType kSupportType = MetalSupportType::Boxed;
+
+static constexpr ImageIndex kSuspendedMonorailDiagFlatImages[NumOrthogonalDirections] = { 25935, 25936, 25935, 25936 };
 
 /** rct2: 0x008636F4 */
 static void SuspendedMonorailTrackFlat(
@@ -40,16 +46,14 @@ static void SuspendedMonorailTrackFlat(
             break;
     }
 
-    PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
-        MetalASupportsPaintSetup(
-            session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+        MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
     }
 
-    PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
-    PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
+    PaintUtilSetGeneralSupportHeight(session, height + 48);
 }
 
 /** rct2: 0x008637A4, 0x008637B4, 0x008637C4 */
@@ -73,11 +77,11 @@ static void SuspendedMonorailTrackStation(
     PaintAddImageAsChildRotated(
         session, direction, session.SupportColours.WithIndex(imageIds[direction][2]), { 0, 6, height + 32 },
         { { 0, 6, height + 32 }, { 32, 20, 3 } });
-    DrawSupportsSideBySide(session, direction, height, session.SupportColours, MetalSupportType::Boxed);
+    DrawSupportsSideBySide(session, direction, height, session.SupportColours, kSupportType);
     TrackPaintUtilDrawStationInverted(session, ride, direction, height, trackElement, STATION_VARIANT_TALL);
-    PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+    PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 48);
 }
 
 /** rct2: 0x00863704 */
@@ -109,42 +113,39 @@ static void SuspendedMonorailTrack25DegUp(
             break;
     }
 
-    PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
         switch (direction)
         {
             case 0:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::TopRightSide, 0, height + 60, session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::TopRightSide, 0, height + 60, session.SupportColours);
                 break;
             case 1:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::BottomRightSide, 0, height + 60,
-                    session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::BottomRightSide, 0, height + 60, session.SupportColours);
                 break;
             case 2:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::BottomLeftSide, 0, height + 60,
-                    session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::BottomLeftSide, 0, height + 60, session.SupportColours);
                 break;
             case 3:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::TopLeftSide, 0, height + 60, session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::TopLeftSide, 0, height + 60, session.SupportColours);
                 break;
         }
     }
 
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, TUNNEL_SQUARE_7);
+        PaintUtilPushTunnelRotated(session, direction, height - 8, TunnelType::SquareSlopeStart);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, TUNNEL_SQUARE_8);
+        PaintUtilPushTunnelRotated(session, direction, height + 8, TunnelType::SquareSlopeEnd);
     }
-    PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+    PaintUtilSetGeneralSupportHeight(session, height + 72);
 }
 
 /** rct2: 0x00863714 */
@@ -176,42 +177,39 @@ static void SuspendedMonorailTrackFlatTo25DegUp(
             break;
     }
 
-    PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
         switch (direction)
         {
             case 0:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::TopRightSide, 0, height + 52, session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::TopRightSide, 0, height + 52, session.SupportColours);
                 break;
             case 1:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::BottomRightSide, 0, height + 52,
-                    session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::BottomRightSide, 0, height + 52, session.SupportColours);
                 break;
             case 2:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::BottomLeftSide, 0, height + 52,
-                    session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::BottomLeftSide, 0, height + 52, session.SupportColours);
                 break;
             case 3:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::TopLeftSide, 0, height + 52, session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::TopLeftSide, 0, height + 52, session.SupportColours);
                 break;
         }
     }
 
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
+        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_8);
+        PaintUtilPushTunnelRotated(session, direction, height, TunnelType::SquareSlopeEnd);
     }
-    PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+    PaintUtilSetGeneralSupportHeight(session, height + 64);
 }
 
 /** rct2: 0x00863724 */
@@ -243,42 +241,39 @@ static void SuspendedMonorailTrack25DegUpToFlat(
             break;
     }
 
-    PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
     if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
     {
         switch (direction)
         {
             case 0:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::TopRightSide, 0, height + 50, session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::TopRightSide, 0, height + 50, session.SupportColours);
                 break;
             case 1:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::BottomRightSide, 0, height + 50,
-                    session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::BottomRightSide, 0, height + 50, session.SupportColours);
                 break;
             case 2:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::BottomLeftSide, 0, height + 50,
-                    session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::BottomLeftSide, 0, height + 50, session.SupportColours);
                 break;
             case 3:
                 MetalASupportsPaintSetup(
-                    session, MetalSupportType::Boxed, MetalSupportPlace::TopLeftSide, 0, height + 50, session.SupportColours);
+                    session, kSupportType, MetalSupportPlace::TopLeftSide, 0, height + 50, session.SupportColours);
                 break;
         }
     }
 
     if (direction == 0 || direction == 3)
     {
-        PaintUtilPushTunnelRotated(session, direction, height - 8, TUNNEL_SQUARE_INVERTED_9);
+        PaintUtilPushTunnelRotated(session, direction, height - 8, TunnelType::InvertedSquare);
     }
     else
     {
-        PaintUtilPushTunnelRotated(session, direction, height + 8, TUNNEL_15);
+        PaintUtilPushTunnelRotated(session, direction, height + 8, TunnelType::_15);
     }
-    PaintUtilSetGeneralSupportHeight(session, height + 56, 0x20);
+    PaintUtilSetGeneralSupportHeight(session, height + 56);
 }
 
 /** rct2: 0x00863734 */
@@ -338,19 +333,23 @@ static void SuspendedMonorailTrackLeftQuarterTurn5(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0 | SEGMENT_D4, direction),
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topRightSide, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             if (direction == 0 || direction == 3)
             {
-                PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
+                PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 1:
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 2:
             switch (direction)
@@ -376,9 +375,13 @@ static void SuspendedMonorailTrackLeftQuarterTurn5(
             }
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC | SEGMENT_D0, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::topRightSide, PaintSegment::bottomLeftSide),
+                    direction),
                 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 3:
             switch (direction)
@@ -404,11 +407,17 @@ static void SuspendedMonorailTrackLeftQuarterTurn5(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 4:
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 5:
             switch (direction)
@@ -434,9 +443,13 @@ static void SuspendedMonorailTrackLeftQuarterTurn5(
             }
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C0 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0 | SEGMENT_D4, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide, PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 6:
             switch (direction)
@@ -464,21 +477,25 @@ static void SuspendedMonorailTrackLeftQuarterTurn5(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC | SEGMENT_D4, direction),
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             switch (direction)
             {
                 case 2:
-                    PaintUtilPushTunnelRight(session, height, TUNNEL_SQUARE_INVERTED_9);
+                    PaintUtilPushTunnelRight(session, height, TunnelType::InvertedSquare);
                     break;
                 case 3:
-                    PaintUtilPushTunnelLeft(session, height, TUNNEL_SQUARE_INVERTED_9);
+                    PaintUtilPushTunnelLeft(session, height, TunnelType::InvertedSquare);
                     break;
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
     }
 }
@@ -488,7 +505,7 @@ static void SuspendedMonorailTrackRightQuarterTurn5(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement)
 {
-    trackSequence = mapLeftQuarterTurn5TilesToRightQuarterTurn5Tiles[trackSequence];
+    trackSequence = kMapLeftQuarterTurn5TilesToRightQuarterTurn5Tiles[trackSequence];
     SuspendedMonorailTrackLeftQuarterTurn5(session, ride, trackSequence, (direction - 1) & 3, height, trackElement);
 }
 
@@ -525,15 +542,20 @@ static void SuspendedMonorailTrackSBendLeft(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             if (direction == 0 || direction == 3)
             {
-                PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
+                PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 1:
             switch (direction)
@@ -560,23 +582,25 @@ static void SuspendedMonorailTrackSBendLeft(
 
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC | SEGMENT_D0, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::topRightSide, PaintSegment::bottomLeftSide),
+                    direction),
                 0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopLeftSide, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopLeftSide, 0, height + 42, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopRightSide, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopRightSide, 0, height + 42, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 2:
             switch (direction)
@@ -603,23 +627,25 @@ static void SuspendedMonorailTrackSBendLeft(
 
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C0 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0 | SEGMENT_D4, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide, PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
             switch (direction)
             {
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopLeftSide, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopLeftSide, 0, height + 42, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopRightSide, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopRightSide, 0, height + 42, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 3:
             switch (direction)
@@ -647,20 +673,25 @@ static void SuspendedMonorailTrackSBendLeft(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             switch (direction)
             {
                 case 1:
-                    PaintUtilPushTunnelRight(session, height, TUNNEL_SQUARE_INVERTED_9);
+                    PaintUtilPushTunnelRight(session, height, TunnelType::InvertedSquare);
                     break;
                 case 2:
-                    PaintUtilPushTunnelLeft(session, height, TUNNEL_SQUARE_INVERTED_9);
+                    PaintUtilPushTunnelLeft(session, height, TunnelType::InvertedSquare);
                     break;
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
     }
 }
@@ -698,15 +729,20 @@ static void SuspendedMonorailTrackSBendRight(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             if (direction == 0 || direction == 3)
             {
-                PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
+                PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 1:
             switch (direction)
@@ -733,23 +769,25 @@ static void SuspendedMonorailTrackSBendRight(
 
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C0 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0 | SEGMENT_D4, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide, PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomRightSide, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomRightSide, 0, height + 42, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomLeftSide, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomLeftSide, 0, height + 42, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 2:
             switch (direction)
@@ -776,23 +814,25 @@ static void SuspendedMonorailTrackSBendRight(
 
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC | SEGMENT_D0, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::topRightSide, PaintSegment::bottomLeftSide),
+                    direction),
                 0xFFFF, 0);
             switch (direction)
             {
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomRightSide, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomRightSide, 0, height + 42, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomLeftSide, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomLeftSide, 0, height + 42, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 3:
             switch (direction)
@@ -820,20 +860,25 @@ static void SuspendedMonorailTrackSBendRight(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             switch (direction)
             {
                 case 1:
-                    PaintUtilPushTunnelRight(session, height, TUNNEL_SQUARE_INVERTED_9);
+                    PaintUtilPushTunnelRight(session, height, TunnelType::InvertedSquare);
                     break;
                 case 2:
-                    PaintUtilPushTunnelLeft(session, height, TUNNEL_SQUARE_INVERTED_9);
+                    PaintUtilPushTunnelLeft(session, height, TunnelType::InvertedSquare);
                     break;
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
     }
 }
@@ -871,19 +916,23 @@ static void SuspendedMonorailTrackLeftQuarterTurn3(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0 | SEGMENT_D4, direction),
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topRightSide, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             if (direction == 0 || direction == 3)
             {
-                PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
+                PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 1:
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 2:
             switch (direction)
@@ -909,8 +958,14 @@ static void SuspendedMonorailTrackLeftQuarterTurn3(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 3:
             switch (direction)
@@ -938,21 +993,25 @@ static void SuspendedMonorailTrackLeftQuarterTurn3(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC | SEGMENT_D4, direction),
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             switch (direction)
             {
                 case 2:
-                    PaintUtilPushTunnelRight(session, height, TUNNEL_SQUARE_INVERTED_9);
+                    PaintUtilPushTunnelRight(session, height, TunnelType::InvertedSquare);
                     break;
                 case 3:
-                    PaintUtilPushTunnelLeft(session, height, TUNNEL_SQUARE_INVERTED_9);
+                    PaintUtilPushTunnelLeft(session, height, TunnelType::InvertedSquare);
                     break;
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
     }
 }
@@ -962,7 +1021,7 @@ static void SuspendedMonorailTrackRightQuarterTurn3(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement)
 {
-    trackSequence = mapLeftQuarterTurn3TilesToRightQuarterTurn3Tiles[trackSequence];
+    trackSequence = kMapLeftQuarterTurn3TilesToRightQuarterTurn3Tiles[trackSequence];
     SuspendedMonorailTrackLeftQuarterTurn3(session, ride, trackSequence, (direction - 1) & 3, height, trackElement);
 }
 
@@ -999,15 +1058,14 @@ static void SuspendedMonorailTrackLeftEighthToDiag(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+                session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             if (direction == 0 || direction == 3)
             {
-                PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
+                PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 1:
             switch (direction)
@@ -1035,9 +1093,13 @@ static void SuspendedMonorailTrackLeftEighthToDiag(
             }
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC | SEGMENT_D0, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::topRightSide, PaintSegment::bottomLeftSide),
+                    direction),
                 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 2:
             switch (direction)
@@ -1064,14 +1126,25 @@ static void SuspendedMonorailTrackLeftEighthToDiag(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C0 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction),
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 3:
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 4:
             switch (direction)
@@ -1100,32 +1173,33 @@ static void SuspendedMonorailTrackLeftEighthToDiag(
 
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC | SEGMENT_D0 | SEGMENT_D4, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide, PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomCorner, 0, height + 42, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::LeftCorner, 0, height + 42, session.SupportColours);
                     break;
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 42, session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopCorner, 0, height + 42, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::RightCorner, 0, height + 42, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
     }
 }
@@ -1163,15 +1237,14 @@ static void SuspendedMonorailTrackRightEighthToDiag(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0, direction), 0xFFFF, 0);
-            MetalASupportsPaintSetup(
-                session, MetalSupportType::Boxed, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
+                session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
+            MetalASupportsPaintSetup(session, kSupportType, MetalSupportPlace::Centre, 0, height + 42, session.SupportColours);
 
             if (direction == 0 || direction == 3)
             {
-                PaintUtilPushTunnelRotated(session, direction, height, TUNNEL_SQUARE_INVERTED_9);
+                PaintUtilPushTunnelRotated(session, direction, height, TunnelType::InvertedSquare);
             }
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 1:
             switch (direction)
@@ -1199,9 +1272,13 @@ static void SuspendedMonorailTrackRightEighthToDiag(
             }
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C0 | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D0 | SEGMENT_D4, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide, PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 2:
             switch (direction)
@@ -1228,14 +1305,25 @@ static void SuspendedMonorailTrackRightEighthToDiag(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC, direction),
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::topRightSide),
+                    direction),
                 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 3:
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_D0 | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
         case 4:
             switch (direction)
@@ -1264,32 +1352,33 @@ static void SuspendedMonorailTrackRightEighthToDiag(
 
             PaintUtilSetSegmentSupportHeight(
                 session,
-                PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC | SEGMENT_D0 | SEGMENT_D4, direction),
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide,
+                        PaintSegment::bottomLeftSide, PaintSegment::bottomRightSide),
+                    direction),
                 0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::LeftCorner, 0, height + 42, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 42, session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopCorner, 0, height + 42, session.SupportColours);
                     break;
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::RightCorner, 0, height + 42, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 42,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomCorner, 0, height + 42, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 48);
             break;
     }
 }
@@ -1317,85 +1406,18 @@ static void SuspendedMonorailTrackDiagFlat(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement)
 {
-    switch (trackSequence)
-    {
-        case 0:
-            switch (direction)
-            {
-                case 3:
-                    PaintAddImageAsParentRotated(
-                        session, direction, session.TrackColours.WithIndex(25936), { -16, -16, height + 32 },
-                        { { -16, -16, height + 32 }, { 32, 32, 3 } });
-                    break;
-            }
-            PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
-            break;
-        case 1:
-            switch (direction)
-            {
-                case 0:
-                    PaintAddImageAsParentRotated(
-                        session, direction, session.TrackColours.WithIndex(25935), { -16, -16, height + 32 },
-                        { { -16, -16, height + 32 }, { 32, 32, 3 } });
-                    break;
-            }
-            PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
-            break;
-        case 2:
-            switch (direction)
-            {
-                case 2:
-                    PaintAddImageAsParentRotated(
-                        session, direction, session.TrackColours.WithIndex(25935), { -16, -16, height + 32 },
-                        { { -16, -16, height + 32 }, { 32, 32, 3 } });
-                    break;
-            }
-            PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_D0 | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
-            break;
-        case 3:
-            switch (direction)
-            {
-                case 1:
-                    PaintAddImageAsParentRotated(
-                        session, direction, session.TrackColours.WithIndex(25936), { -16, -16, height + 32 },
-                        { { -16, -16, height + 32 }, { 32, 32, 3 } });
-                    break;
-            }
+    TrackPaintUtilDiagTilesPaint(
+        session, 3, height + 32, direction, trackSequence, kSuspendedMonorailDiagFlatImages, defaultDiagTileOffsets,
+        defaultDiagBoundLengths, nullptr);
 
-            PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
-            switch (direction)
-            {
-                case 0:
-                    MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 42,
-                        session.SupportColours);
-                    break;
-                case 1:
-                    MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 42, session.SupportColours);
-                    break;
-                case 2:
-                    MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 42,
-                        session.SupportColours);
-                    break;
-                case 3:
-                    MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 42,
-                        session.SupportColours);
-                    break;
-            }
+    PaintUtilSetSegmentSupportHeight(
+        session, PaintUtilRotateSegments(BlockedSegments::kDiagStraightFlat[trackSequence], direction), 0xFFFF, 0);
 
-            PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
-            break;
-    }
+    if (trackSequence == 3)
+        MetalASupportsPaintSetupRotated(
+            session, kSupportType, MetalSupportPlace::LeftCorner, direction, 0, height + 42, session.SupportColours);
+
+    PaintUtilSetGeneralSupportHeight(session, height + 48);
 }
 
 /** rct2: 0x00863824 */
@@ -1415,8 +1437,14 @@ static void SuspendedMonorailTrackDiag25DegUp(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 1:
             switch (direction)
@@ -1428,8 +1456,13 @@ static void SuspendedMonorailTrackDiag25DegUp(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 2:
             switch (direction)
@@ -1441,8 +1474,14 @@ static void SuspendedMonorailTrackDiag25DegUp(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_D0 | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 3:
             switch (direction)
@@ -1455,31 +1494,34 @@ static void SuspendedMonorailTrackDiag25DegUp(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 55,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::LeftCorner, 0, height + 55, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 55, session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopCorner, 0, height + 55, session.SupportColours);
                     break;
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 55,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::RightCorner, 0, height + 55, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 57,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomCorner, 0, height + 57, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
     }
 }
@@ -1501,8 +1543,14 @@ static void SuspendedMonorailTrackDiagFlatTo25DegUp(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 64);
             break;
         case 1:
             switch (direction)
@@ -1514,8 +1562,13 @@ static void SuspendedMonorailTrackDiagFlatTo25DegUp(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 64);
             break;
         case 2:
             switch (direction)
@@ -1527,8 +1580,14 @@ static void SuspendedMonorailTrackDiagFlatTo25DegUp(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_D0 | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 64);
             break;
         case 3:
             switch (direction)
@@ -1541,31 +1600,34 @@ static void SuspendedMonorailTrackDiagFlatTo25DegUp(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 48,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::LeftCorner, 0, height + 48, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 48, session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopCorner, 0, height + 48, session.SupportColours);
                     break;
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 48,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::RightCorner, 0, height + 48, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 50,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomCorner, 0, height + 50, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 64);
             break;
     }
 }
@@ -1587,8 +1649,14 @@ static void SuspendedMonorailTrackDiag25DegUpToFlat(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 1:
             switch (direction)
@@ -1600,8 +1668,13 @@ static void SuspendedMonorailTrackDiag25DegUpToFlat(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 2:
             switch (direction)
@@ -1613,8 +1686,14 @@ static void SuspendedMonorailTrackDiag25DegUpToFlat(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_D0 | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 3:
             switch (direction)
@@ -1627,31 +1706,34 @@ static void SuspendedMonorailTrackDiag25DegUpToFlat(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 51,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::LeftCorner, 0, height + 51, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 51, session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopCorner, 0, height + 51, session.SupportColours);
                     break;
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 51,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::RightCorner, 0, height + 51, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 51,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomCorner, 0, height + 51, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
     }
 }
@@ -1673,8 +1755,14 @@ static void SuspendedMonorailTrackDiag25DegDown(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 1:
             switch (direction)
@@ -1686,8 +1774,13 @@ static void SuspendedMonorailTrackDiag25DegDown(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 2:
             switch (direction)
@@ -1699,8 +1792,14 @@ static void SuspendedMonorailTrackDiag25DegDown(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_D0 | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
         case 3:
             switch (direction)
@@ -1713,31 +1812,34 @@ static void SuspendedMonorailTrackDiag25DegDown(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 54,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::LeftCorner, 0, height + 54, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 54, session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopCorner, 0, height + 54, session.SupportColours);
                     break;
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 51,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::RightCorner, 0, height + 51, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 58,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomCorner, 0, height + 58, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 72);
             break;
     }
 }
@@ -1759,7 +1861,13 @@ static void SuspendedMonorailTrackDiagFlatTo25DegDown(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
             break;
         case 1:
             switch (direction)
@@ -1771,7 +1879,12 @@ static void SuspendedMonorailTrackDiagFlatTo25DegDown(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide),
+                    direction),
+                0xFFFF, 0);
             break;
         case 2:
             switch (direction)
@@ -1783,7 +1896,13 @@ static void SuspendedMonorailTrackDiagFlatTo25DegDown(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_D0 | SEGMENT_D4, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
             break;
         case 3:
             switch (direction)
@@ -1796,33 +1915,36 @@ static void SuspendedMonorailTrackDiagFlatTo25DegDown(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 48,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::LeftCorner, 0, height + 48, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 48, session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopCorner, 0, height + 48, session.SupportColours);
                     break;
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 48,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::RightCorner, 0, height + 48, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 48,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomCorner, 0, height + 48, session.SupportColours);
                     break;
             }
             break;
     }
 
-    PaintUtilSetGeneralSupportHeight(session, height + 72, 0x20);
+    PaintUtilSetGeneralSupportHeight(session, height + 72);
 }
 
 /** rct2: 0x00863844 */
@@ -1842,8 +1964,14 @@ static void SuspendedMonorailTrackDiag25DegDownToFlat(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_BC | SEGMENT_C4 | SEGMENT_CC | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::rightCorner, PaintSegment::centre, PaintSegment::topRightSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 64);
             break;
         case 1:
             switch (direction)
@@ -1855,8 +1983,13 @@ static void SuspendedMonorailTrackDiag25DegDownToFlat(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B4 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_CC, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::topCorner, PaintSegment::centre, PaintSegment::topLeftSide, PaintSegment::topRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 64);
             break;
         case 2:
             switch (direction)
@@ -1868,8 +2001,14 @@ static void SuspendedMonorailTrackDiag25DegDownToFlat(
                     break;
             }
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_C0 | SEGMENT_C4 | SEGMENT_D0 | SEGMENT_D4, direction), 0xFFFF, 0);
-            PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::bottomCorner, PaintSegment::centre, PaintSegment::bottomLeftSide,
+                        PaintSegment::bottomRightSide),
+                    direction),
+                0xFFFF, 0);
+            PaintUtilSetGeneralSupportHeight(session, height + 64);
             break;
         case 3:
             switch (direction)
@@ -1882,31 +2021,34 @@ static void SuspendedMonorailTrackDiag25DegDownToFlat(
             }
 
             PaintUtilSetSegmentSupportHeight(
-                session, PaintUtilRotateSegments(SEGMENT_B8 | SEGMENT_C4 | SEGMENT_C8 | SEGMENT_D0, direction), 0xFFFF, 0);
+                session,
+                PaintUtilRotateSegments(
+                    EnumsToFlags(
+                        PaintSegment::leftCorner, PaintSegment::centre, PaintSegment::topLeftSide,
+                        PaintSegment::bottomLeftSide),
+                    direction),
+                0xFFFF, 0);
             switch (direction)
             {
                 case 0:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::LeftCorner, 0, height + 46,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::LeftCorner, 0, height + 46, session.SupportColours);
                     break;
                 case 1:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::TopCorner, 0, height + 46, session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::TopCorner, 0, height + 46, session.SupportColours);
                     break;
                 case 2:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::RightCorner, 0, height + 46,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::RightCorner, 0, height + 46, session.SupportColours);
                     break;
                 case 3:
                     MetalASupportsPaintSetup(
-                        session, MetalSupportType::Boxed, MetalSupportPlace::BottomCorner, 0, height + 46,
-                        session.SupportColours);
+                        session, kSupportType, MetalSupportPlace::BottomCorner, 0, height + 46, session.SupportColours);
                     break;
             }
 
-            PaintUtilSetGeneralSupportHeight(session, height + 64, 0x20);
+            PaintUtilSetGeneralSupportHeight(session, height + 64);
             break;
     }
 }

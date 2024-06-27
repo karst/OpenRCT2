@@ -10,6 +10,7 @@
 #include "GameAction.h"
 
 #include "../Context.h"
+#include "../GameState.h"
 #include "../ReplayManager.h"
 #include "../core/Guard.hpp"
 #include "../core/Memory.hpp"
@@ -29,7 +30,6 @@
 #include "../world/Park.h"
 #include "../world/Scenery.h"
 
-#include <algorithm>
 #include <iterator>
 
 using namespace OpenRCT2;
@@ -101,7 +101,7 @@ namespace GameActions
             return;
         }
 
-        const uint32_t currentTick = gCurrentTicks;
+        const uint32_t currentTick = GetGameState().CurrentTicks;
 
         while (_actionQueue.begin() != _actionQueue.end())
         {
@@ -183,7 +183,7 @@ namespace GameActions
     {
         if (gGamePaused == 0)
             return true;
-        if (gCheatsBuildInPauseMode)
+        if (GetGameState().Cheats.BuildInPauseMode)
             return true;
         if (actionFlags & GameActions::Flags::AllowWhilePaused)
             return true;
@@ -251,7 +251,7 @@ namespace GameActions
 
         char temp[128] = {};
         snprintf(
-            temp, sizeof(temp), "[%s] Tick: %u, GA: %s (%08X) (", GetRealm(), gCurrentTicks, action->GetName(),
+            temp, sizeof(temp), "[%s] Tick: %u, GA: %s (%08X) (", GetRealm(), GetGameState().CurrentTicks, action->GetName(),
             EnumValue(action->GetType()));
 
         output.Write(temp, strlen(temp));
@@ -345,7 +345,7 @@ namespace GameActions
                     if (!(actionFlags & GameActions::Flags::ClientOnly) && !(flags & GAME_COMMAND_FLAG_NETWORKED))
                     {
                         LOG_VERBOSE("[%s] GameAction::Execute %s (Queue)", GetRealm(), action->GetName());
-                        Enqueue(action, gCurrentTicks);
+                        Enqueue(action, GetGameState().CurrentTicks);
 
                         return result;
                     }
@@ -415,13 +415,13 @@ namespace GameActions
                     }
                     if (recordAction)
                     {
-                        replayManager->AddGameAction(gCurrentTicks, action);
+                        replayManager->AddGameAction(GetGameState().CurrentTicks, action);
                     }
                 }
             }
 
             // Allow autosave to commence
-            if (gLastAutoSaveUpdate == AUTOSAVE_PAUSE)
+            if (gLastAutoSaveUpdate == kAutosavePause)
             {
                 gLastAutoSaveUpdate = Platform::GetTicks();
             }

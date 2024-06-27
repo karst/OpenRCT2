@@ -10,6 +10,9 @@
 #ifdef _WIN32
 
 // Windows.h needs to be included first
+#    ifndef WIN32_LEAN_AND_MEAN
+#        define WIN32_LEAN_AND_MEAN
+#    endif
 #    include <windows.h>
 
 // Then the rest
@@ -604,6 +607,7 @@ namespace Platform
             { L"fi", LANGUAGE_FINNISH },
             { L"sv", LANGUAGE_SWEDISH },
             { L"tr", LANGUAGE_TURKISH },
+            { L"uk", LANGUAGE_UKRAINIAN },
             { L"vi", LANGUAGE_VIETNAMESE },
         };
         static_assert(

@@ -11,6 +11,9 @@
 #include "../../common.h"
 #include "../../interface/Viewport.h"
 #include "../../paint/Paint.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
+#include "../../paint/track/Support.h"
 #include "../Ride.h"
 #include "../Track.h"
 #include "../TrackPaint.h"
@@ -57,8 +60,11 @@ static void PaintBoatHireTrackFlat(
     }
 
     PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_D0 | SEGMENT_C4 | SEGMENT_CC, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 16, 0x20);
+        session,
+        PaintUtilRotateSegments(
+            EnumsToFlags(PaintSegment::bottomLeftSide, PaintSegment::centre, PaintSegment::topRightSide), direction),
+        0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 16);
 }
 
 /** rct2: 0x008B0E50 */
@@ -70,19 +76,19 @@ static void PaintBoatHireStation(
 
     if (direction & 1)
     {
-        PaintUtilPushTunnelRight(session, height, TUNNEL_SQUARE_FLAT);
+        PaintUtilPushTunnelRight(session, height, TunnelType::SquareFlat);
         TrackPaintUtilDrawPier(
             session, ride, stationObj, session.MapPosition, direction, height, trackElement, session.CurrentRotation);
     }
     else
     {
-        PaintUtilPushTunnelLeft(session, height, TUNNEL_SQUARE_FLAT);
+        PaintUtilPushTunnelLeft(session, height, TunnelType::SquareFlat);
         TrackPaintUtilDrawPier(
             session, ride, stationObj, session.MapPosition, direction, height, trackElement, session.CurrentRotation);
     }
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 32, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + kDefaultGeneralSupportHeight);
 }
 
 /** rct2: 0x008B0E80 */
@@ -125,8 +131,11 @@ static void PaintBoatHireTrackLeftQuarterTurn1Tile(
     }
 
     PaintUtilSetSegmentSupportHeight(
-        session, PaintUtilRotateSegments(SEGMENT_D0 | SEGMENT_C4 | SEGMENT_C8, direction), 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 16, 0x20);
+        session,
+        PaintUtilRotateSegments(
+            EnumsToFlags(PaintSegment::bottomLeftSide, PaintSegment::centre, PaintSegment::topLeftSide), direction),
+        0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 16);
 }
 
 /** rct2: 0x008B0E90 */

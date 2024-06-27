@@ -11,7 +11,6 @@
 
 #include "../common.h"
 #include "Track.h"
-#include "TrackPaint.h"
 
 constexpr uint8_t MaxSequencesPerPiece = 16;
 
@@ -26,11 +25,11 @@ struct TrackCurveChain
 struct TrackDescriptor
 {
     bool starts_diagonal;
-    uint8_t slope_start;
-    uint8_t bank_start;
-    uint8_t track_curve;
-    uint8_t slope_end;
-    uint8_t bank_end;
+    TrackPitch slope_start;
+    TrackRoll RollStart;
+    TrackCurve track_curve;
+    TrackPitch slope_end;
+    TrackRoll RollEnd;
     track_type_t track_element;
 };
 
@@ -87,7 +86,7 @@ struct TrackElementDescriptor
     uint32_t PriceModifier;
     track_type_t MirrorElement;
     uint32_t HeightMarkerPositions;
-    uint16_t Flags;
+    uint32_t Flags;
 
     std::array<uint8_t, MaxSequencesPerPiece> SequenceElementAllowedWallEdges;
     std::array<uint8_t, MaxSequencesPerPiece> SequenceProperties;

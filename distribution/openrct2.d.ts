@@ -56,7 +56,10 @@ declare global {
      * Plugin writers should check if ui is available using `typeof ui !== 'undefined'`.
      */
     var ui: Ui;
-
+    /**
+     * APIs for managing the installed plugins
+     */
+    var pluginManager: PluginManager;
     /**
      * Registers the plugin. This may only be called once.
      * @param metadata Information about the plugin and the entry point.
@@ -214,6 +217,11 @@ declare global {
         readonly mode: GameMode;
 
         /**
+         * Whether the game is currently paused or not. Readonly in network mode.
+         */
+        paused: boolean;
+
+        /**
          * Render the current state of the map and save to disc.
          * Useful for server administration and timelapse creation.
          * @param options Options that control the capture and output file.
@@ -309,7 +317,7 @@ declare global {
         queryAction(action: string, args: object, callback?: (result: GameActionResult) => void): void;
         queryAction(action: ActionType, args: object, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "balloonpress", args: BalloonPressArgs, callback?: (result: GameActionResult) => void): void;
-        queryAction(action: "bannerplace", args: BannerPlaceArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "bannerplace", args: BannerPlaceArgs, callback?: (result: BannerCreateActionResult) => void): void;
         queryAction(action: "bannerremove", args: BannerRemoveArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "bannersetcolour", args: BannerSetColourArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "bannersetname", args: BannerSetNameArgs, callback?: (result: GameActionResult) => void): void;
@@ -331,7 +339,7 @@ declare global {
         queryAction(action: "landsetheight", args: LandSetHeightArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "landsetrights", args: LandSetRightsArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "landsmooth", args: LandSmoothArgs, callback?: (result: GameActionResult) => void): void;
-        queryAction(action: "largesceneryplace", args: LargeSceneryPlaceArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "largesceneryplace", args: LargeSceneryPlaceArgs, callback?: (result: BannerCreateActionResult) => void): void;
         queryAction(action: "largesceneryremove", args: LargeSceneryRemoveArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "largescenerysetcolour", args: LargeScenerySetColourArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "loadorquit", args: LoadOrQuitArgs, callback?: (result: GameActionResult) => void): void;
@@ -384,7 +392,7 @@ declare global {
         queryAction(action: "trackplace", args: TrackPlaceArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "trackremove", args: TrackRemoveArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "tracksetbrakespeed", args: TrackSetBrakeSpeedArgs, callback?: (result: GameActionResult) => void): void;
-        queryAction(action: "wallplace", args: WallPlaceArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "wallplace", args: WallPlaceArgs, callback?: (result: BannerCreateActionResult) => void): void;
         queryAction(action: "wallremove", args: WallRemoveArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "wallsetcolour", args: WallSetColourArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "waterlower", args: WaterLowerArgs, callback?: (result: GameActionResult) => void): void;
@@ -401,7 +409,7 @@ declare global {
         executeAction(action: string, args: object, callback?: (result: GameActionResult) => void): void;
         executeAction(action: ActionType, args: object, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "balloonpress", args: BalloonPressArgs, callback?: (result: GameActionResult) => void): void;
-        executeAction(action: "bannerplace", args: BannerPlaceArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "bannerplace", args: BannerPlaceArgs, callback?: (result: BannerCreateActionResult) => void): void;
         executeAction(action: "bannerremove", args: BannerRemoveArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "bannersetcolour", args: BannerSetColourArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "bannersetname", args: BannerSetNameArgs, callback?: (result: GameActionResult) => void): void;
@@ -423,7 +431,7 @@ declare global {
         executeAction(action: "landsetheight", args: LandSetHeightArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "landsetrights", args: LandSetRightsArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "landsmooth", args: LandSmoothArgs, callback?: (result: GameActionResult) => void): void;
-        executeAction(action: "largesceneryplace", args: LargeSceneryPlaceArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "largesceneryplace", args: LargeSceneryPlaceArgs, callback?: (result: BannerCreateActionResult) => void): void;
         executeAction(action: "largesceneryremove", args: LargeSceneryRemoveArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "largescenerysetcolour", args: LargeScenerySetColourArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "loadorquit", args: LoadOrQuitArgs, callback?: (result: GameActionResult) => void): void;
@@ -476,7 +484,7 @@ declare global {
         executeAction(action: "trackplace", args: TrackPlaceArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "trackremove", args: TrackRemoveArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "tracksetbrakespeed", args: TrackSetBrakeSpeedArgs, callback?: (result: GameActionResult) => void): void;
-        executeAction(action: "wallplace", args: WallPlaceArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "wallplace", args: WallPlaceArgs, callback?: (result: BannerCreateActionResult) => void): void;
         executeAction(action: "wallremove", args: WallRemoveArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "wallsetcolour", args: WallSetColourArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "waterlower", args: WaterLowerArgs, callback?: (result: GameActionResult) => void): void;
@@ -868,7 +876,7 @@ declare global {
         x: number;
         y: number;
         height: number;
-        style: number; // see TILE_ELEMENT_SLOPE in openrct2/world/Surface.h
+        style: number; // see openrct2/world/tile_element/Slope.h
     }
 
     interface LandSetRightsArgs extends GameActionArgs {
@@ -931,6 +939,8 @@ declare global {
     interface MapChangeSizeArgs extends GameActionArgs {
         targetSizeX: number;
         targetSizeY: number;
+        shiftX: number;
+        shiftY: number;
     }
 
     interface MazePlaceTrackArgs extends GameActionArgs {
@@ -1333,6 +1343,10 @@ declare global {
         expenditureType?: ExpenditureType;
     }
 
+    interface BannerCreateActionResult extends GameActionResult {
+        readonly bannerIndex?: number;
+    }
+
     interface RideCreateActionResult extends GameActionResult {
         readonly ride?: number;
     }
@@ -1473,7 +1487,6 @@ declare global {
         occupiedQuadrants: number;
         isGhost: boolean;
         isHidden: boolean; /** Take caution when changing this field, it may invalidate TileElements you have stored in your script. */
-        owner: number;
     }
 
     interface SurfaceElement extends BaseTileElement {
@@ -1500,12 +1513,12 @@ declare global {
 
         edges: number;
         corners: number;
-        slopeDirection: number | null;
+        slopeDirection: Direction | null;
         isBlockedByVehicle: boolean;
         isWide: boolean;
 
         isQueue: boolean;
-        queueBannerDirection: number | null;
+        queueBannerDirection: Direction | null;
         ride: number | null;
         station: number | null;
 
@@ -1544,6 +1557,7 @@ declare global {
         object: number;
         primaryColour: number;
         secondaryColour: number;
+        tertiaryColour: number;
         quadrant: number;
         age: number;
     }
@@ -1554,10 +1568,14 @@ declare global {
         direction: Direction;
         object: number;
         primaryColour: number;
+        /** If the element is a banner, this is the text colour. */
         secondaryColour: number;
         tertiaryColour: number;
-        bannerIndex: number | null;
         slope: Direction;
+        /** Writing to bannerIndex is deprecated and may result in uncontrolled behaviour. */
+        readonly bannerIndex: number | null;
+        /** If the element is a banner, this is its text. */
+        bannerText: string | null;
     }
 
     interface EntranceElement extends BaseTileElement {
@@ -1578,16 +1596,28 @@ declare global {
         direction: Direction;
         object: number;
         primaryColour: number;
+        /** If the element is a banner, this is the text colour. */
         secondaryColour: number;
         tertiaryColour: number;
-        bannerIndex: number | null;
         sequence: number;
+        /** Writing to bannerIndex is deprecated and may result in uncontrolled behaviour. */
+        readonly bannerIndex: number | null;
+        /** If the element is a banner, this is its text. */
+        bannerText: string | null;
     }
 
     interface BannerElement extends BaseTileElement {
         type: "banner";
+
         direction: Direction;
-        bannerIndex: number;
+        object: number;
+        primaryColour: number;
+        /** This is the text colour. */
+        secondaryColour: number;
+        /** Writing to bannerIndex is deprecated and may result in uncontrolled behaviour. */
+        readonly bannerIndex: number;
+        bannerText: string;
+        isNoEntry: boolean;
     }
 
     /**
@@ -2097,6 +2127,11 @@ declare global {
         supports: number;
     }
 
+    interface CrashedVehicleColour {
+        body: number;
+        trim: number;
+    }
+
     interface VehicleColour {
         body: number;
         trim: number;
@@ -2582,6 +2617,63 @@ declare global {
         "waiting_to_depart" |
         "waiting_to_start";
 
+    type CrashParticleType =  "corner" | "rod" | "wheel" | "panel" | "seat";
+
+    /**
+     * Override properties for launch data. All properties except colour are randomly
+     * chosen if not overridden, using the same algorithm as regular crashed particles.
+     */
+    interface CrashParticleLaunchData {
+        colours?: CrashedVehicleColour;
+        timeToLive?: number;
+        velocity?: CoordsXYZ;
+        crashParticleType?: CrashParticleType;
+        frame?: number;
+    }
+
+    /**
+     * Represents a vehicle explosion particle. They are emitted during a vehicle
+     * crash and will bounce until their timer expires and they are automatically
+     * removed.
+     */
+    interface CrashedVehicleParticle extends Entity {
+        /**
+         * The colour of the particle.
+         */
+        colours: CrashedVehicleColour;
+
+        /**
+         * The lifetime of the particle in ticks. Default value 65535. Entity is
+         * automatically removed at 0.
+         */
+        timeToLive: number;
+
+        /**
+         * The particle velocity.
+         */
+        velocity: CoordsXYZ;
+
+        /**
+         * The acceleration of the particle in the x, y, and z directions.
+         */
+        acceleration: CoordsXYZ;
+
+        /**
+         * The type of crash particle.
+         */
+        crashParticleType: CrashParticleType;
+
+        /**
+         * The current frame of the crash particle.
+         */
+        frame: number;
+
+        /**
+         * Sets the sprite bounds and launches the particle.
+         */
+        launch(launchData?: CrashParticleLaunchData): void;
+    }
+
     /**
      * Represents a guest or staff member.
      * @deprecated since version 34, use guest or staff instead.
@@ -2657,6 +2749,34 @@ declare global {
      * @deprecated since version 34, use EntityType instead.
      */
     type PeepType = "guest" | "staff";
+
+    type GuestAnimation =
+        "walking" |
+        "checkTime" |
+        "watchRide" |
+        "eatFood" |
+        "shakeHead" |
+        "emptyPockets" |
+        "holdMat" |
+        "sittingIdle" |
+        "sittingEatFood" |
+        "sittingLookAroundLeft" |
+        "sittingLookAroundRight" |
+        "hanging" |
+        "wow" |
+        "throwUp" |
+        "jump" |
+        "drowning" |
+        "joy" |
+        "readMap" |
+        "wave" |
+        "wave2" |
+        "takePhoto" |
+        "clap" |
+        "disgust" |
+        "drawPicture" |
+        "beingWatched" |
+        "withdrawMoney";
 
     /**
      * Represents a guest.
@@ -2766,6 +2886,65 @@ declare global {
          * The list of thoughts this guest has.
          */
         readonly thoughts: Thought[];
+
+        /**
+         * The list of items this guest has.
+         */
+        readonly items: GuestItem[];
+
+        /**
+         * Checks whether this guest has a certain item.
+         * @param item The item to check.
+         */
+        hasItem(item: GuestItem): boolean;
+
+        /**
+         * Gives an item to the guest. Guests can only have one item of a given type.
+         * If this guest already has an item of the same type, this will override the current item.
+         * @param item The item to give.
+         */
+        giveItem(item: GuestItem): void;
+
+        /**
+         * Removes an item from the guest's possession.
+         * @param item The item to remove.
+         */
+        removeItem(item: GuestItem): void;
+
+        /**
+         * Removes all items from the guest's possession.
+         */
+        removeAllItems(): void;
+
+        /**
+         * The animations available to this guest.
+         */
+        readonly availableAnimations: GuestAnimation[];
+
+        /**
+         * Gets an array of sprite ids representing a particular guest animation.
+         */
+        getAnimationSpriteIds(animation: GuestAnimation, rotation: number): number[];
+
+        /**
+         * The animation the guest is currently exhibiting.
+         */
+        animation: GuestAnimation;
+
+        /**
+         * The frame offset in the current animation.
+         */
+        animationOffset: number;
+
+        /**
+         * The total number of frames in the current animation.
+         */
+        readonly animationLength: number;
+
+        /**
+         * The ride ID of the guest's favourite ride.
+         */
+        favouriteRide: number | null;
     }
 
     /**
@@ -2928,6 +3107,158 @@ declare global {
         "excited_deprecated" |
         "here_we_are";
 
+    type GuestItemType =
+        "balloon" |
+        "hat" |
+        "map" |
+        "sunglasses" |
+        "toy" |
+        "tshirt" |
+        "umbrella" |
+        "photo1" |
+        "photo2" |
+        "photo3" |
+        "photo4" |
+        "voucher" |
+        "beef_noodles" |
+        "burger" |
+        "candyfloss" |
+        "chicken" |
+        "chips" |
+        "chocolate" |
+        "cookie" |
+        "doughnut" |
+        "hot_dog" |
+        "fried_rice_noodles" |
+        "funnel_cake" |
+        "ice_cream" |
+        "meatball_soup" |
+        "pizza" |
+        "popcorn" |
+        "pretzel" |
+        "roast_sausage" |
+        "sub_sandwich" |
+        "tentacle" |
+        "toffee_apple" |
+        "wonton_soup" |
+        "coffee" |
+        "drink" |
+        "fruit_juice" |
+        "iced_tea" |
+        "lemonade" |
+        "soybean_milk" |
+        "sujeonggwa" |
+        "empty_bottle" |
+        "empty_bowl_blue" |
+        "empty_bowl_red" |
+        "empty_box" |
+        "empty_burger_box" |
+        "empty_can" |
+        "empty_cup" |
+        "empty_drink_carton" |
+        "empty_juice_cup" |
+        "rubbish";
+
+    type VoucherType =
+        "entry_free" |
+        "entry_half_price" |
+        "ride_free" |
+        "food_drink_free";
+
+    /**
+     * Represents an item in a guest's possession.
+     * If giving a guest a photo or voucher, use the other interfaces instead.
+     */
+    interface GuestItem {
+        /**
+         * The type of item.
+         */
+        readonly type: GuestItemType;
+    }
+
+    /**
+     * Represents an on-ride photo in a guest's possession.
+     */
+    interface GuestPhoto extends GuestItem {
+        readonly type: "photo1" | "photo2" | "photo3" | "photo4";
+        /**
+         * The id of the ride the on-ride photo is for.
+         */
+        readonly rideId: number;
+    }
+
+    /**
+     * Represents a voucher in a guest's possession. If giving a guest a voucher for free rides
+     * or free food/drink, use the other interfaces instead.
+     */
+    interface Voucher extends GuestItem {
+        readonly type: "voucher";
+        /**
+         * The type of voucher.
+         */
+        readonly voucherType: VoucherType;
+    }
+
+    /**
+     * Represents a voucher for a free ride in a guest's possession.
+     */
+    interface RideVoucher extends Voucher {
+        readonly voucherType: "ride_free";
+        /**
+         * The id of the ride the voucher is for.
+         */
+        readonly rideId: number;
+    }
+
+    /**
+     * Represents a voucher for free food or drink in a guest's possession.
+     */
+    interface FoodDrinkVoucher extends Voucher {
+        readonly voucherType: "food_drink_free";
+        /**
+         * The type of food or drink the voucher is for.
+         */
+        readonly item: GuestItemType;
+    }
+
+    type StaffCostume =
+        "none" |
+        "handyman" |
+        "mechanic" |
+        "security1" |
+        "security2" |
+        "panda" |
+        "tiger" |
+        "elephant" |
+        "roman" |
+        "gorilla" |
+        "snowman" |
+        "knight" |
+        "astronaut" |
+        "bandit" |
+        "sheriff" |
+        "pirate";
+
+    type StaffAnimation =
+        "walking" |
+        "watchRide" |
+        "wave" |
+        "hanging" |
+        "staffMower" |
+        "staffSweep" |
+        "drowning" |
+        "staffAnswerCall" |
+        "staffAnswerCall2" |
+        "staffCheckBoard" |
+        "staffFix" |
+        "staffFix2" |
+        "staffFixGround" |
+        "staffFix3" |
+        "staffWatering" |
+        "joy" |
+        "staffEmptyBin" |
+        "wave2";
+
     /**
      * Represents a staff member.
      */
@@ -2938,14 +3269,19 @@ declare global {
         staffType: StaffType;
 
         /**
-         * Colour of the staff member. Not applicable for entertainers.
+         * Colour of the staff member. Not applicable to entertainers.
          */
         colour: number;
 
         /**
-         * The entertainer's costume, only applicable for entertainers.
+         * Array of costumes available to this particular staff member.
          */
-        costume: number;
+        readonly availableCostumes: StaffCostume[];
+
+        /**
+         * The staff member's costume.
+         */
+        costume: StaffCostume | string | number;
 
         /**
          * The enabled jobs the staff can do, e.g. sweep litter, water plants, inspect rides etc.
@@ -2956,6 +3292,31 @@ declare global {
          * Gets the patrol area for the staff member.
          */
         readonly patrolArea: PatrolArea;
+
+        /**
+         * The animations available to this staff member.
+         */
+        readonly availableAnimations: StaffAnimation[];
+
+        /**
+         * Gets an array of sprite ids representing a particular staff animation.
+         */
+        getAnimationSpriteIds(animation: StaffAnimation, rotation: number): number[];
+
+        /**
+         * The animation the staff member is currently exhibiting.
+         */
+        animation: StaffAnimation;
+
+        /**
+         * The frame offset in the current animation.
+         */
+        animationOffset: number;
+
+        /**
+         * The total number of frames in the current animation.
+         */
+        readonly animationLength: number;
     }
 
     type StaffType = "handyman" | "mechanic" | "security" | "entertainer";
@@ -3438,6 +3799,14 @@ declare global {
 
         postMessage(message: string): void;
         postMessage(message: ParkMessageDesc): void;
+
+        /**
+         * Gets the monthly expenditure history for a given type.
+         * Index 0 represents the current month, index 1 the previous month, etc.
+         * The maximum length of the array is 16.
+         * @param type The type of expenditure to get.
+         */
+        getMonthlyExpenditure(type: ExpenditureType): number[]
     }
 
     interface Research {
@@ -3465,8 +3834,9 @@ declare global {
 
         /**
          * The amount of funding currently spent on research.
+         * 0: none, 1: minimum, 2: normal, 3: maximum
          */
-        funding: ResearchFundingLevel;
+        funding: number;
 
         /**
          * The categories of research which should be prioritised.
@@ -3516,7 +3886,7 @@ declare global {
          * E.g. gentle rides, thrill rides, shops etc.
          * Note: Any updates to this field are ignored by OpenRCT2, the category will be derived from the ride type.
          */
-        readonly category?: ResearchCategory;
+        readonly category: RideResearchCategory;
 
         /**
          * The ride type. Each vehicle can have a seperate invention for each ride type.
@@ -3530,7 +3900,7 @@ declare global {
     }
 
     interface SceneryResearchItem {
-        readonly category?: "scenery_group";
+        readonly category: "scenery";
         readonly type: "scenery";
 
         /**
@@ -3539,23 +3909,15 @@ declare global {
         readonly object: number;
     }
 
-    type ResearchItemType = "scenery" | "ride";
-
-    type ResearchCategory =
+    type RideResearchCategory =
         "transport" |
         "gentle" |
         "rollercoaster" |
         "thrill" |
         "water" |
-        "shop" |
-        "scenery";
+        "shop";
 
-    enum ResearchFundingLevel {
-        None,
-        Minimum,
-        Normal,
-        Maximum
-    }
+    type ResearchCategory = RideResearchCategory | "scenery";
 
     type ResearchFundingStage =
         "initial_research" |
@@ -4000,25 +4362,29 @@ declare global {
         ButtonWidget | CheckboxWidget | ColourPickerWidget | CustomWidget | DropdownWidget | GroupBoxWidget |
         LabelWidget | ListViewWidget | SpinnerWidget | TextBoxWidget | ViewportWidget;
 
-    type IconName = "arrow_down" | "arrow_up" | "chat" | "cheats" | "copy" | "empty" | "eyedropper" |
-        "fast_forward" | "game_speed_indicator" | "game_speed_indicator_double" | "glassy_recolourable" |
-        "hide_full" | "hide_partial" | "hide_scenery" | "hide_supports" | "hide_vegetation" | "hide_vehicles" |
-        "large_scenery" | "legacy_paths" | "link_chain" | "logo" | "logo_text" | "map_east" |
-        "map_east_pressed" | "map_gen_land" | "map_gen_noise" | "map_gen_trees" | "map_north" |
-        "map_north_pressed" | "map_south" | "map_south_pressed" | "map_west" | "map_west_pressed" |
-        "mountain_tool_even" | "mountain_tool_odd" | "multiplayer" | "multiplayer_desync" | "multiplayer_sync" |
-        "multiplayer_toolbar" | "multiplayer_toolbar_pressed" | "mute" | "mute_pressed" | "news_messages" |
-        "normal_selection_6x6" | "palette_invisible" | "palette_invisible_pressed" | "paste" | "path_railings" | "path_surfaces" | "paths" | "placeholder" |
-        "rct1_close_off" | "rct1_close_off_pressed" | "rct1_close_on" | "rct1_close_on_pressed" | "rct1_open_off" |
-        "rct1_open_off_pressed" | "rct1_open_on" | "rct1_open_on_pressed" | "rct1_simulate_off" |
-        "rct1_simulate_off_pressed" | "rct1_simulate_on" | "rct1_simulate_on_pressed" | "rct1_test_off" |
-        "rct1_test_off_pressed" | "rct1_test_on" | "rct1_test_on_pressed" | "reload" | "ride_stations" |
-        "scenery_scatter_high" | "scenery_scatter_low" | "scenery_scatter_medium" | "search" |
-        "selection_edge_ne" | "selection_edge_nw" | "selection_edge_se" | "selection_edge_sw" |
-        "server_password" | "sideways_tab" | "sideways_tab_active" | "simulate" | "small_scenery" | "sort" |
-        "terrain_edges" | "title_play" | "title_restart" | "title_skip" | "title_stop" | "unmute" |
-        "unmute_pressed" | "view" | "zoom_in" | "zoom_in_background" | "zoom_out" | "zoom_out_background";
-
+    type IconName = 
+        "arrow_down" | "arrow_up" | "award" | "awards" | "chain_lift" | "chat" | "cheats" | "closed" | "construction" |
+        "copy" | "demolish" | "empty" | "eyedropper" | "fast_forward" | "finance" | "floppy_disk" | "game_speed_indicator" |
+        "game_speed_indicator_double" | "glassy_recolourable" | "graph" | "guest_inventory" | "guests" | 
+        "hearing" | "hide_full" | "hide_partial" | "hide_scenery" | "hide_supports" | "hide_vegetation" | "hide_vehicles" | 
+        "kiosks_and_facilities" | "large_scenery" | "legacy_paths" | "link_chain" | "locate" | "logo" | "logo_text" | "map" | 
+        "map_east" | "map_east_pressed" | "map_gen_land" | "map_gen_noise" | "map_gen_trees" | "map_north" | "map_north_pressed" | 
+        "map_south" | "map_south_pressed" | "map_west" | "map_west_pressed" | "mechanic" | "mirror_arrow" | 
+        "mountain_tool_even" | "mountain_tool_odd" | "multiplayer" | "multiplayer_desync" | "multiplayer_sync" | 
+        "multiplayer_toolbar" | "multiplayer_toolbar_pressed" | "music" | "mute" | "mute_pressed" | "news_messages" | 
+        "new_ride" | "next" | "no_entry" | "open" | "paintbrush" | "palette_invisible" | "palette_invisible_pressed" | "park" |
+        "paste" | "path_railings" | "path_surfaces" | "paths" | "patrol" | "pause" | "pickup" | "placeholder" | "previous" | 
+        "question" | "rct1_close_off" | "rct1_close_off_pressed" | "rct1_close_on" | "rct1_close_on_pressed" | "rct1_open_off" | 
+        "rct1_open_off_pressed" | "rct1_open_on" | "rct1_open_on_pressed" | "rct1_simulate_off" | "rct1_simulate_off_pressed" | 
+        "rct1_simulate_on" | "rct1_simulate_on_pressed" | "rct1_test_off" | "rct1_test_off_pressed" | "rct1_test_on" | 
+        "rct1_test_on_pressed" | "reload" | "rename" | "research" | "ride" | "ride_stations" | "rides_gentle" | 
+        "rides_rollercoasters" | "rides_shop" | "rides_thrill" | "rides_transport" | "rides_water" | "rotate_arrow" | "scenery" | 
+        "scenery_cluster" | "scenery_paths" | "scenery_paths_items" | "scenery_scatter_high" | "scenery_scatter_low" | 
+        "scenery_scatter_medium" | "scenery_signage" | "scenery_statues" | "scenery_trees" | "scenery_urban" | "scenery_walls" | 
+        "search" | "selection_edge_ne" | "selection_edge_nw" | "selection_edge_se" | "selection_edge_sw" | "server_password" | 
+        "shops_and_stalls" | "sideways_tab" | "sideways_tab_active" | "simulate" | "small_scenery" | "sort" | "stats" | "testing" | 
+        "terrain_edges" | "title_play" | "title_restart" | "title_skip" | "title_stop" | "unmute" | "unmute_pressed" | "view" | 
+        "water" | "zoom_in" | "zoom_in_background" | "zoom_out" | "zoom_out_background";
 
     interface WidgetBase {
         readonly window: Window;
@@ -4803,5 +5169,12 @@ declare global {
         getAllObjects(type: "banner"): BannerObject[];
         getAllObjects(type: "scenery_group"): SceneryGroupObject[];
         getAllObjects(type: "music"): LoadedObject[];
+    }
+
+    /**
+     * Interface to handle the plugin manager
+     */
+    interface PluginManager {
+        readonly plugins: PluginMetadata[];
     }
 }

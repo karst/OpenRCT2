@@ -23,8 +23,6 @@
 #    include "../../Duktape.hpp"
 #    include "../../ScriptEngine.h"
 
-#    include <algorithm>
-
 namespace OpenRCT2::Scripting
 {
     ScParkMessage::ScParkMessage(size_t index)
@@ -46,7 +44,7 @@ namespace OpenRCT2::Scripting
 
     News::Item* ScParkMessage::GetMessage() const
     {
-        return &gNewsItems[_index];
+        return &GetGameState().NewsItems[_index];
     }
 
     bool ScParkMessage::isArchived_get() const

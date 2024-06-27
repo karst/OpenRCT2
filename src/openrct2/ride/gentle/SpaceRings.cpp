@@ -12,7 +12,9 @@
 #include "../../entity/Guest.h"
 #include "../../interface/Viewport.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/WoodenSupports.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
 #include "../RideEntry.h"
 #include "../Track.h"
 #include "../TrackPaint.h"
@@ -87,18 +89,19 @@ static void PaintSpaceRings(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement)
 {
-    trackSequence = track_map_3x3[direction][trackSequence];
+    trackSequence = kTrackMap3x3[direction][trackSequence];
 
-    int32_t edges = edges_3x3[trackSequence];
+    int32_t edges = kEdges3x3[trackSequence];
     CoordsXY position = session.MapPosition;
 
     ImageId imageId;
 
     auto stationColour = GetStationColourScheme(session, trackElement);
-    WoodenASupportsPaintSetup(session, (direction & 1), 0, height, stationColour);
+    WoodenASupportsPaintSetupRotated(
+        session, WoodenSupportType::Truss, WoodenSupportSubType::NeSw, direction, height, stationColour);
 
     const StationObject* stationObject = ride.GetStationObject();
-    TrackPaintUtilPaintFloor(session, edges, session.TrackColours, height, floorSpritesCork, stationObject);
+    TrackPaintUtilPaintFloor(session, edges, session.TrackColours, height, kFloorSpritesCork, stationObject);
 
     switch (trackSequence)
     {
@@ -144,33 +147,41 @@ static void PaintSpaceRings(
             cornerSegments = 0;
             break;
         case 1:
-            cornerSegments = SEGMENT_B8 | SEGMENT_C8 | SEGMENT_B4 | SEGMENT_CC | SEGMENT_BC;
+            cornerSegments = EnumsToFlags(
+                PaintSegment::leftCorner, PaintSegment::topLeftSide, PaintSegment::topCorner, PaintSegment::topRightSide,
+                PaintSegment::rightCorner);
             break;
         case 2:
-            cornerSegments = SEGMENT_B4 | SEGMENT_CC | SEGMENT_BC;
+            cornerSegments = EnumsToFlags(PaintSegment::topCorner, PaintSegment::topRightSide, PaintSegment::rightCorner);
             break;
         case 3:
-            cornerSegments = SEGMENT_B4 | SEGMENT_CC | SEGMENT_BC | SEGMENT_D4 | SEGMENT_C0;
+            cornerSegments = EnumsToFlags(
+                PaintSegment::topCorner, PaintSegment::topRightSide, PaintSegment::rightCorner, PaintSegment::bottomRightSide,
+                PaintSegment::bottomCorner);
             break;
         case 4:
-            cornerSegments = SEGMENT_B4 | SEGMENT_C8 | SEGMENT_B8;
+            cornerSegments = EnumsToFlags(PaintSegment::topCorner, PaintSegment::topLeftSide, PaintSegment::leftCorner);
             break;
         case 5:
-            cornerSegments = SEGMENT_BC | SEGMENT_D4 | SEGMENT_C0;
+            cornerSegments = EnumsToFlags(PaintSegment::rightCorner, PaintSegment::bottomRightSide, PaintSegment::bottomCorner);
             break;
         case 6:
-            cornerSegments = SEGMENT_B4 | SEGMENT_C8 | SEGMENT_B8 | SEGMENT_D0 | SEGMENT_C0;
+            cornerSegments = EnumsToFlags(
+                PaintSegment::topCorner, PaintSegment::topLeftSide, PaintSegment::leftCorner, PaintSegment::bottomLeftSide,
+                PaintSegment::bottomCorner);
             break;
         case 7:
-            cornerSegments = SEGMENT_B8 | SEGMENT_D0 | SEGMENT_C0 | SEGMENT_D4 | SEGMENT_BC;
+            cornerSegments = EnumsToFlags(
+                PaintSegment::leftCorner, PaintSegment::bottomLeftSide, PaintSegment::bottomCorner,
+                PaintSegment::bottomRightSide, PaintSegment::rightCorner);
             break;
         case 8:
-            cornerSegments = SEGMENT_B8 | SEGMENT_D0 | SEGMENT_C0;
+            cornerSegments = EnumsToFlags(PaintSegment::leftCorner, PaintSegment::bottomLeftSide, PaintSegment::bottomCorner);
             break;
     }
     PaintUtilSetSegmentSupportHeight(session, cornerSegments, height + 2, 0x20);
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL & ~cornerSegments, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll & ~cornerSegments, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 48);
 }
 
 /**

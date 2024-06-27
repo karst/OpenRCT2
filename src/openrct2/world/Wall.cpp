@@ -82,12 +82,12 @@ void WallRemoveIntersectingWalls(const CoordsXYRangedZ& wallPos, Direction direc
 
 uint8_t WallElement::GetSlope() const
 {
-    return (Type & TILE_ELEMENT_QUADRANT_MASK) >> 6;
+    return (Type & kTileElementQuadrantMask) >> 6;
 }
 
 void WallElement::SetSlope(uint8_t newSlope)
 {
-    Type &= ~TILE_ELEMENT_QUADRANT_MASK;
+    Type &= ~kTileElementQuadrantMask;
     Type |= (newSlope << 6);
 }
 
@@ -184,4 +184,52 @@ void WallElement::SetAnimationIsBackwards(bool isBackwards)
     animation &= ~WALL_ANIMATION_FLAG_DIRECTION_BACKWARD;
     if (isBackwards)
         animation |= WALL_ANIMATION_FLAG_DIRECTION_BACKWARD;
+}
+
+#pragma region Edge Slopes Table
+
+// clang-format off
+// rct2: 0x009A3FEC
+constexpr static uint8_t LandSlopeToWallSlope[][NumOrthogonalDirections] = {
+    //  Top right                        Bottom right                   Bottom left                       Top left
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_DOWNWARDS,          0                             },
+    { 0,                             0,                             EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_DOWNWARDS          },
+    { 0,                             EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_DOWNWARDS          },
+    { EDGE_SLOPE_DOWNWARDS,          0,                             0,                             EDGE_SLOPE_UPWARDS            },
+    { EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS            },
+    { EDGE_SLOPE_DOWNWARDS,          0,                             EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_ELEVATED           },
+    { EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_ELEVATED           },
+    { EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_DOWNWARDS,          0,                             0                             },
+    { EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_DOWNWARDS,          0                             },
+    { EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_DOWNWARDS          },
+    { EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_DOWNWARDS          },
+    { EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_DOWNWARDS,          0,                             EDGE_SLOPE_UPWARDS            },
+    { EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS            },
+    { EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_ELEVATED           },
+    { EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_ELEVATED,           EDGE_SLOPE_ELEVATED           },
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             0,                             0,                             0                             },
+    { EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_UPWARDS_ELEVATED,   EDGE_SLOPE_DOWNWARDS_ELEVATED },
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             0,                             0,                             0                             },
+    { 0,                             0,                             0,                             0                             },
+    { EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_UPWARDS_ELEVATED,   EDGE_SLOPE_DOWNWARDS_ELEVATED, EDGE_SLOPE_DOWNWARDS          },
+    { 0,                             0,                             0,                             0                             },
+    { EDGE_SLOPE_UPWARDS_ELEVATED,   EDGE_SLOPE_DOWNWARDS_ELEVATED, EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS            },
+    { EDGE_SLOPE_DOWNWARDS_ELEVATED, EDGE_SLOPE_DOWNWARDS,          EDGE_SLOPE_UPWARDS,            EDGE_SLOPE_UPWARDS_ELEVATED   },
+    { 0,                             0,                             0,                             0                             },
+};
+// clang-format on
+
+#pragma endregion
+
+uint8_t GetWallSlopeFromEdgeSlope(uint8_t Slope, uint8_t Edge)
+{
+    return LandSlopeToWallSlope[Slope][Edge];
 }

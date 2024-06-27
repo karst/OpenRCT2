@@ -10,6 +10,7 @@
 #include "LandSetRightsAction.h"
 
 #include "../Context.h"
+#include "../GameState.h"
 #include "../OpenRCT2.h"
 #include "../actions/LandSetHeightAction.h"
 #include "../audio/audio.h"
@@ -82,7 +83,7 @@ GameActions::Result LandSetRightsAction::QueryExecute(bool isExecuting) const
     res.Position = centre;
     res.Expenditure = ExpenditureType::LandPurchase;
 
-    if (!(gScreenFlags & SCREEN_FLAGS_EDITOR) && !gCheatsSandboxMode)
+    if (!(gScreenFlags & SCREEN_FLAGS_EDITOR) && !GetGameState().Cheats.SandboxMode)
     {
         return GameActions::Result(GameActions::Status::NotInEditorMode, STR_NONE, STR_LAND_NOT_FOR_SALE);
     }
@@ -115,8 +116,9 @@ GameActions::Result LandSetRightsAction::MapBuyLandRightsForTile(const CoordsXY&
     SurfaceElement* surfaceElement = MapGetSurfaceElementAt(loc);
     if (surfaceElement == nullptr)
     {
-        LOG_ERROR("Could not find surface. x = %d, y = %d", loc.x, loc.y);
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_NONE, STR_NONE);
+        LOG_ERROR("No surface at x = %d, y = %d", loc.x, loc.y);
+        return GameActions::Result(
+            GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_SURFACE_ELEMENT_NOT_FOUND);
     }
 
     auto res = GameActions::Result();
@@ -127,7 +129,7 @@ GameActions::Result LandSetRightsAction::MapBuyLandRightsForTile(const CoordsXY&
             {
                 surfaceElement->SetOwnership(
                     surfaceElement->GetOwnership() & ~(OWNERSHIP_OWNED | OWNERSHIP_CONSTRUCTION_RIGHTS_OWNED));
-                ParkUpdateFencesAroundTile(loc);
+                Park::UpdateFencesAroundTile(loc);
             }
             return res;
         case LandSetRightSetting::UnownConstructionRights:
@@ -182,27 +184,29 @@ GameActions::Result LandSetRightsAction::MapBuyLandRightsForTile(const CoordsXY&
                 }
             }
 
-            res.Cost = gLandPrice;
+            auto& gameState = GetGameState();
+            res.Cost = gameState.LandPrice;
             if (isExecuting)
             {
                 if (_ownership != OWNERSHIP_UNOWNED)
                 {
-                    gPeepSpawns.erase(
+                    gameState.PeepSpawns.erase(
                         std::remove_if(
-                            gPeepSpawns.begin(), gPeepSpawns.end(),
+                            gameState.PeepSpawns.begin(), gameState.PeepSpawns.end(),
                             [x = loc.x, y = loc.y](const auto& spawn) {
                                 return Floor2(spawn.x, 32) == x && Floor2(spawn.y, 32) == y;
                             }),
-                        gPeepSpawns.end());
+                        gameState.PeepSpawns.end());
                 }
                 surfaceElement->SetOwnership(_ownership);
-                ParkUpdateFencesAroundTile(loc);
+                Park::UpdateFencesAroundTile(loc);
                 gMapLandRightsUpdateSuccess = true;
             }
             return res;
         }
         default:
-            LOG_WARNING("Tried calling set land rights with an incorrect setting. setting = %u", _setting);
-            return GameActions::Result(GameActions::Status::InvalidParameters, STR_NONE, STR_NONE);
+            LOG_ERROR("Invalid setting %u to set land rights", _setting);
+            return GameActions::Result(
+                GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_VALUE_OUT_OF_RANGE);
     }
 }

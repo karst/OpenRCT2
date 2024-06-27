@@ -13,6 +13,7 @@
 #include "../common.h"
 #include "../world/Location.hpp"
 #include "Station.h"
+#include "Track.h"
 
 #include <cstdint>
 #include <optional>
@@ -21,6 +22,9 @@ using track_type_t = uint16_t;
 
 struct TileElement;
 struct CoordsXYE;
+struct RideTypeDescriptor;
+struct TrackDrawerDescriptor;
+struct TrackDrawerEntry;
 
 enum class RideConstructionState : uint8_t
 {
@@ -47,18 +51,18 @@ extern uint8_t _currentTrackPieceDirection;
 extern track_type_t _currentTrackPieceType;
 extern uint8_t _currentTrackSelectionFlags;
 extern uint32_t _rideConstructionNextArrowPulse;
-extern uint8_t _currentTrackSlopeEnd;
-extern uint8_t _currentTrackBankEnd;
+extern TrackPitch _currentTrackPitchEnd;
+extern TrackRoll _currentTrackRollEnd;
 extern uint8_t _currentTrackLiftHill;
 extern uint8_t _currentTrackAlternative;
 extern track_type_t _selectedTrackType;
 
-extern uint8_t _previousTrackBankEnd;
-extern uint8_t _previousTrackSlopeEnd;
+extern TrackRoll _previousTrackRollEnd;
+extern TrackPitch _previousTrackPitchEnd;
 
 extern CoordsXYZ _previousTrackPiece;
 
-extern uint8_t _currentBrakeSpeed2;
+extern uint8_t _currentBrakeSpeed;
 extern uint8_t _currentSeatRotationAngle;
 
 extern CoordsXYZD _unkF440C5;
@@ -91,3 +95,6 @@ bool RideSelectBackwardsFromFront();
 bool RideSelectForwardsFromBack();
 
 void RideConstructionStart(Ride& ride);
+
+TrackDrawerDescriptor getCurrentTrackDrawerDescriptor(const RideTypeDescriptor& rtd);
+TrackDrawerEntry getCurrentTrackDrawerEntry(const RideTypeDescriptor& rtd);

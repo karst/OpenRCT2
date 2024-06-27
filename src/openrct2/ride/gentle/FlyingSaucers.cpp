@@ -10,7 +10,9 @@
 #include "../../interface/Viewport.h"
 #include "../../object/StationObject.h"
 #include "../../paint/Paint.h"
-#include "../../paint/Supports.h"
+#include "../../paint/support/WoodenSupports.h"
+#include "../../paint/tile_element/Segment.h"
+#include "../../paint/track/Segment.h"
 #include "../Ride.h"
 #include "../Track.h"
 #include "../TrackPaint.h"
@@ -38,11 +40,13 @@ static void PaintFlyingSaucers(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement)
 {
-    uint8_t relativeTrackSequence = track_map_4x4[direction][trackSequence];
+    uint8_t relativeTrackSequence = kTrackMap4x4[direction][trackSequence];
 
-    int32_t edges = edges_4x4[relativeTrackSequence];
+    int32_t edges = kEdges4x4[relativeTrackSequence];
 
-    WoodenASupportsPaintSetup(session, direction & 1, 0, height, GetStationColourScheme(session, trackElement));
+    WoodenASupportsPaintSetupRotated(
+        session, WoodenSupportType::Truss, WoodenSupportSubType::NeSw, direction, height,
+        GetStationColourScheme(session, trackElement));
 
     const StationObject* stationObject = ride.GetStationObject();
 
@@ -56,8 +60,8 @@ static void PaintFlyingSaucers(
         session, edges, session.MapPosition, trackElement, ride, session.TrackColours, height, FlyingSaucersFenceSprites,
         session.CurrentRotation);
 
-    PaintUtilSetSegmentSupportHeight(session, SEGMENTS_ALL, 0xFFFF, 0);
-    PaintUtilSetGeneralSupportHeight(session, height + 48, 0x20);
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 48);
 }
 
 /**

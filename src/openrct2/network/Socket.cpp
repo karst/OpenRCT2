@@ -49,9 +49,10 @@
     #include <netdb.h>
     #include <netinet/in.h>
     #include <netinet/tcp.h>
-    #include <unistd.h>
     #include <sys/ioctl.h>
+    #include <sys/select.h>
     #include <sys/socket.h>
+    #include <sys/time.h>
     #include <unistd.h>
     #include "../common.h"
     using SOCKET = int32_t;
@@ -247,7 +248,7 @@ private:
 class TcpSocket final : public ITcpSocket, protected Socket
 {
 private:
-    std::atomic<SocketStatus> _status = ATOMIC_VAR_INIT(SocketStatus::Closed);
+    std::atomic<SocketStatus> _status{ SocketStatus::Closed };
     uint16_t _listeningPort = 0;
     SOCKET _socket = INVALID_SOCKET;
 

@@ -12,11 +12,15 @@
 #include "../core/EnumMap.hpp"
 #include "../drawing/Drawing.h"
 #include "../sprites.h"
+#include "../util/Util.h"
 
-#include <algorithm>
 #include <cmath>
 
 ColourShadeMap ColourMapA[COLOUR_COUNT] = {};
+
+static constexpr uint8_t kLegacyColourMaskBase = 0x1F;
+static constexpr uint8_t kLegacyColourFlagOutline = (1 << 5);
+static constexpr uint8_t kLegacyColourFlagInset = (1 << 6);
 
 enum
 {
@@ -127,6 +131,15 @@ namespace Colour
         return (result != LookupTable.end()) ? result->second : defaultValue;
     }
 
+    u8string ToString(colour_t colour)
+    {
+        auto result = LookupTable.find(colour);
+        if (result != LookupTable.end())
+            return u8string(result->first);
+
+        return "black";
+    }
+
 } // namespace Colour
 
 #ifndef NO_TTF
@@ -156,9 +169,9 @@ static uint8_t FindClosestPaletteIndex(uint8_t red, uint8_t green, uint8_t blue)
 
 static void InitBlendColourMap()
 {
-    for (int i = 0; i < PALETTE_SIZE; i++)
+    for (size_t i = 0; i < PALETTE_SIZE; i++)
     {
-        for (int j = i; j < PALETTE_SIZE; j++)
+        for (size_t j = i; j < PALETTE_SIZE; j++)
         {
             uint8_t red = (gPalette[i].Red + gPalette[j].Red) / 2;
             uint8_t green = (gPalette[i].Green + gPalette[j].Green) / 2;
@@ -195,3 +208,44 @@ BlendColourMapType* GetBlendColourMap()
     return nullptr;
 }
 #endif
+
+bool ColourWithFlags::hasFlag(ColourFlag flag) const
+{
+    return flags & EnumToFlag(flag);
+}
+
+void ColourWithFlags::setFlag(ColourFlag flag, bool on)
+{
+    if (on)
+        flags |= EnumToFlag(flag);
+    else
+        flags &= ~EnumToFlag(flag);
+}
+
+ColourWithFlags ColourWithFlags::withFlag(ColourFlag flag, bool on) const
+{
+    struct ColourWithFlags result = *this;
+    result.setFlag(flag, on);
+    return result;
+}
+
+ColourWithFlags ColourWithFlags::fromLegacy(uint8_t legacy)
+{
+    ColourWithFlags result{};
+    result.colour = legacy & kLegacyColourMaskBase;
+    if (legacy & kLegacyColourFlagTranslucent)
+        result.flags |= EnumToFlag(ColourFlag::translucent);
+    if (legacy & kLegacyColourFlagInset)
+        result.flags |= EnumToFlag(ColourFlag::inset);
+    if (legacy & kLegacyColourFlagOutline)
+        result.flags |= EnumToFlag(ColourFlag::withOutline);
+
+    return result;
+}
+
+ColourWithFlags& ColourWithFlags::operator=(colour_t rhs)
+{
+    colour = rhs;
+    flags = 0;
+    return *this;
+}

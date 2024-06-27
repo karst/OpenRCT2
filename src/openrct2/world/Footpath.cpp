@@ -10,6 +10,7 @@
 #include "../Cheats.h"
 #include "../Context.h"
 #include "../Game.h"
+#include "../GameState.h"
 #include "../Identifiers.h"
 #include "../OpenRCT2.h"
 #include "../actions/FootpathPlaceAction.h"
@@ -35,6 +36,7 @@
 #include "../ride/Track.h"
 #include "../ride/TrackData.h"
 #include "../util/Util.h"
+#include "../world/tile_element/Slope.h"
 #include "Location.hpp"
 #include "Map.h"
 #include "MapAnimation.h"
@@ -43,7 +45,6 @@
 #include "Surface.h"
 #include "TileElement.h"
 
-#include <algorithm>
 #include <iterator>
 
 using namespace OpenRCT2::TrackMetaData;
@@ -149,7 +150,7 @@ money64 FootpathProvisionalSet(
     auto footpathPlaceAction = FootpathPlaceAction(footpathLoc, slope, type, railingsType, INVALID_DIRECTION, constructFlags);
     footpathPlaceAction.SetFlags(GAME_COMMAND_FLAG_GHOST | GAME_COMMAND_FLAG_ALLOW_DURING_PAUSED);
     auto res = GameActions::Execute(&footpathPlaceAction);
-    cost = res.Error == GameActions::Status::Ok ? res.Cost : MONEY64_UNDEFINED;
+    cost = res.Error == GameActions::Status::Ok ? res.Cost : kMoney64Undefined;
     if (res.Error == GameActions::Status::Ok)
     {
         gProvisionalFootpath.SurfaceIndex = type;
@@ -180,8 +181,7 @@ money64 FootpathProvisionalSet(
             VirtualFloorSetHeight(0);
         }
         else if (
-            gFootpathConstructSlope == TILE_ELEMENT_SLOPE_FLAT
-            || gProvisionalFootpath.Position.z < gFootpathConstructFromPosition.z)
+            gFootpathConstructSlope == kTileSlopeFlat || gProvisionalFootpath.Position.z < gFootpathConstructFromPosition.z)
         {
             // Going either straight on, or down.
             VirtualFloorSetHeight(gProvisionalFootpath.Position.z);
@@ -288,7 +288,7 @@ CoordsXY FootpathGetCoordinatesFromPos(const ScreenCoordsXY& screenCoords, int32
         {
             z = TileElementHeight(position);
         }
-        position = ViewportPosToMapPos(start_vp_pos, z);
+        position = ViewportPosToMapPos(start_vp_pos, z, viewport->rotation);
         position.x = std::clamp(position.x, minPosition.x, maxPosition.x);
         position.y = std::clamp(position.y, minPosition.y, maxPosition.y);
     }
@@ -825,7 +825,7 @@ static void Loc6A6D7E(
     FootpathNeighbourList* neighbourList)
 {
     auto targetPos = CoordsXY{ initialTileElementPos } + CoordsDirectionDelta[direction];
-    if (((gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || gCheatsSandboxMode) && MapIsEdge(targetPos))
+    if (((gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || OpenRCT2::GetGameState().Cheats.SandboxMode) && MapIsEdge(targetPos))
     {
         if (query)
         {
@@ -886,7 +886,7 @@ static void Loc6A6D7E(
                         {
                             return;
                         }
-                        uint16_t dx = DirectionReverse((direction - tileElement->GetDirection()) & TILE_ELEMENT_DIRECTION_MASK);
+                        uint16_t dx = DirectionReverse((direction - tileElement->GetDirection()) & kTileElementDirectionMask);
 
                         if (!(ted.SequenceProperties[trackSequence] & (1 << dx)))
                         {
@@ -972,7 +972,7 @@ static void Loc6A6C85(
         {
             return;
         }
-        uint16_t dx = (direction - tileElementPos.element->GetDirection()) & TILE_ELEMENT_DIRECTION_MASK;
+        uint16_t dx = (direction - tileElementPos.element->GetDirection()) & kTileElementDirectionMask;
         if (!(ted.SequenceProperties[trackSequence] & (1 << dx)))
         {
             return;
@@ -2214,7 +2214,7 @@ bool TileElementWantsPathConnectionTowards(const TileCoordsXYZD& coords, const T
                     const auto& ted = GetTrackElementDescriptor(trackType);
                     if (ted.SequenceProperties[trackSequence] & TRACK_SEQUENCE_FLAG_CONNECTS_TO_PATH)
                     {
-                        uint16_t dx = ((coords.direction - tileElement->GetDirection()) & TILE_ELEMENT_DIRECTION_MASK);
+                        uint16_t dx = ((coords.direction - tileElement->GetDirection()) & kTileElementDirectionMask);
                         if (ted.SequenceProperties[trackSequence] & (1 << dx))
                         {
                             // Track element has the flags required for the given direction
@@ -2353,7 +2353,7 @@ void FootpathRemoveEdgesAt(const CoordsXY& footpathPos, TileElement* tileElement
 
 static ObjectEntryIndex FootpathGetDefaultSurface(bool queue)
 {
-    bool showEditorPaths = ((gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || gCheatsSandboxMode);
+    bool showEditorPaths = ((gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || OpenRCT2::GetGameState().Cheats.SandboxMode);
     for (ObjectEntryIndex i = 0; i < MAX_FOOTPATH_SURFACE_OBJECTS; i++)
     {
         auto pathEntry = GetPathSurfaceEntry(i);
@@ -2377,7 +2377,7 @@ static bool FootpathIsSurfaceEntryOkay(ObjectEntryIndex index, bool queue)
     auto pathEntry = GetPathSurfaceEntry(index);
     if (pathEntry != nullptr)
     {
-        bool showEditorPaths = ((gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || gCheatsSandboxMode);
+        bool showEditorPaths = ((gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || OpenRCT2::GetGameState().Cheats.SandboxMode);
         if (!showEditorPaths && (pathEntry->Flags & FOOTPATH_ENTRY_FLAG_SHOW_ONLY_IN_SCENARIO_EDITOR))
         {
             return false;
@@ -2405,7 +2405,7 @@ static ObjectEntryIndex FootpathGetDefaultRailings()
 
 static bool FootpathIsLegacyPathEntryOkay(ObjectEntryIndex index)
 {
-    bool showEditorPaths = ((gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || gCheatsSandboxMode);
+    bool showEditorPaths = ((gScreenFlags & SCREEN_FLAGS_SCENARIO_EDITOR) || OpenRCT2::GetGameState().Cheats.SandboxMode);
     auto& objManager = OpenRCT2::GetContext()->GetObjectManager();
     auto footpathObj = static_cast<FootpathObject*>(objManager.GetLoadedObject(ObjectType::Paths, index));
     if (footpathObj != nullptr)

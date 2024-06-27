@@ -10,6 +10,7 @@
 #include "VirtualFloor.h"
 
 #include "../Cheats.h"
+#include "../GameState.h"
 #include "../Input.h"
 #include "../config/Config.h"
 #include "../interface/Viewport.h"
@@ -23,7 +24,6 @@
 #include "VirtualFloor.h"
 #include "tile_element/Paint.TileElement.h"
 
-#include <algorithm>
 #include <limits>
 
 using namespace OpenRCT2;
@@ -122,6 +122,11 @@ void VirtualFloorInvalidate()
         }
     }
 
+    bool invalidateNewRegion
+        = (min_position.x != std::numeric_limits<int32_t>::max() && min_position.y != std::numeric_limits<int32_t>::max()
+           && max_position.x != std::numeric_limits<int32_t>::lowest()
+           && max_position.y != std::numeric_limits<int32_t>::lowest());
+
     // Apply the virtual floor size to the computed invalidation area.
     min_position.x -= _virtualFloorBaseSize + 16;
     min_position.y -= _virtualFloorBaseSize + 16;
@@ -157,9 +162,7 @@ void VirtualFloorInvalidate()
 
     LOG_VERBOSE("Min: %d %d, Max: %d %d", min_position.x, min_position.y, max_position.x, max_position.y);
 
-    // Invalidate new region if coordinates are set.
-    if (min_position.x != std::numeric_limits<int32_t>::max() && min_position.y != std::numeric_limits<int32_t>::max()
-        && max_position.x != std::numeric_limits<int32_t>::lowest() && max_position.y != std::numeric_limits<int32_t>::lowest())
+    if (invalidateNewRegion)
     {
         MapInvalidateRegion(min_position, max_position);
 
@@ -241,7 +244,7 @@ static void VirtualFloorGetTileProperties(
 
     *tileOwned = MapIsLocationOwned({ loc, height });
 
-    if (gCheatsSandboxMode)
+    if (GetGameState().Cheats.SandboxMode)
         *tileOwned = true;
 
     // Iterate through the map elements of the current tile to find:
@@ -303,7 +306,7 @@ void VirtualFloorPaint(PaintSession& session)
         { 0, -COORDS_XY_STEP },
     };
 
-    if (_virtualFloorHeight < MINIMUM_LAND_HEIGHT)
+    if (_virtualFloorHeight < kMinimumLandHeight)
         return;
 
     uint8_t direction = session.CurrentRotation;
@@ -402,7 +405,7 @@ void VirtualFloorPaint(PaintSession& session)
             { { 5, 5, _virtualFloorHeight + ((dullEdges & EDGE_NW) ? -2 : 0) }, { 0, 0, 1 } });
     }
 
-    if (gConfigGeneral.VirtualFloorStyle != VirtualFloorStyles::Glassy)
+    if (Config::Get().general.VirtualFloorStyle != VirtualFloorStyles::Glassy)
         return;
 
     if (!weAreOccupied && !weAreLit && weAreAboveGround && weAreOwned)

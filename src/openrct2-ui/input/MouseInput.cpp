@@ -7,7 +7,8 @@
  * OpenRCT2 is licensed under the GNU General Public License version 3.
  *****************************************************************************/
 
-#include <algorithm>
+#include "../UiStringIds.h"
+
 #include <cmath>
 #include <iterator>
 #include <openrct2-ui/interface/Dropdown.h>
@@ -33,6 +34,9 @@
 #include <openrct2/world/Map.h>
 #include <openrct2/world/Scenery.h>
 #include <optional>
+
+using namespace OpenRCT2;
+using namespace OpenRCT2::Ui::Windows;
 
 struct RCTMouseData
 {
@@ -220,8 +224,10 @@ static void InputScrollDragContinue(const ScreenCoordsXY& screenCoords, WindowBa
     WidgetScrollUpdateThumbs(*w, widgetIndex);
     WindowInvalidateByNumber(w->classification, w->number);
 
-    ScreenCoordsXY fixedCursorPosition = { static_cast<int32_t>(std::ceil(gInputDragLast.x * gConfigGeneral.WindowScale)),
-                                           static_cast<int32_t>(std::ceil(gInputDragLast.y * gConfigGeneral.WindowScale)) };
+    ScreenCoordsXY fixedCursorPosition = {
+        static_cast<int32_t>(std::ceil(gInputDragLast.x * Config::Get().general.WindowScale)),
+        static_cast<int32_t>(std::ceil(gInputDragLast.y * Config::Get().general.WindowScale))
+    };
 
     ContextSetCursorPosition(fixedCursorPosition);
 }
@@ -390,7 +396,7 @@ static void GameHandleInputMouse(const ScreenCoordsXY& screenCoords, MouseState 
                         break;
                     }
 
-                    WindowEventToolDragCall(w, gCurrentToolWidget.widget_index, screenCoords);
+                    w->OnToolDrag(gCurrentToolWidget.widget_index, screenCoords);
                     break;
                 case MouseState::LeftRelease:
                     _inputState = InputState::Reset;
@@ -401,7 +407,7 @@ static void GameHandleInputMouse(const ScreenCoordsXY& screenCoords, MouseState 
                             w = WindowFindByNumber(gCurrentToolWidget.window_classification, gCurrentToolWidget.window_number);
                             if (w != nullptr)
                             {
-                                WindowEventToolUpCall(w, gCurrentToolWidget.widget_index, screenCoords);
+                                w->OnToolUp(gCurrentToolWidget.widget_index, screenCoords);
                             }
                         }
                         else if (!(_inputFlags & INPUT_FLAG_4))
@@ -473,7 +479,7 @@ static void InputWindowPositionContinue(
 {
     int32_t snapProximity;
 
-    snapProximity = (w.flags & WF_NO_SNAPPING) ? 0 : gConfigGeneral.WindowSnapProximity;
+    snapProximity = (w.flags & WF_NO_SNAPPING) ? 0 : Config::Get().general.WindowSnapProximity;
     WindowMoveAndSnap(w, newScreenCoords - lastScreenCoords, snapProximity);
 }
 
@@ -482,7 +488,7 @@ static void InputWindowPositionEnd(WindowBase& w, const ScreenCoordsXY& screenCo
     _inputState = InputState::Normal;
     gTooltipCloseTimeout = 0;
     gTooltipWidget = _dragWidget;
-    WindowEventMovedCall(&w, screenCoords);
+    w.OnMoved(screenCoords);
 }
 
 static void InputWindowResizeBegin(WindowBase& w, WidgetIndex widgetIndex, const ScreenCoordsXY& screenCoords)
@@ -528,7 +534,7 @@ static void InputViewportDragBegin(WindowBase& w)
     _ticksSinceDragStart = gCurrentRealTimeTicks;
     auto cursorPosition = ContextGetCursorPosition();
     gInputDragLast = cursorPosition;
-    if (!gConfigGeneral.InvertViewportDrag)
+    if (!Config::Get().general.InvertViewportDrag)
     {
         ContextHideCursor();
     }
@@ -576,7 +582,7 @@ static void InputViewportDragContinue()
 
             differentialCoords.x = (viewport->zoom + 1).ApplyTo(differentialCoords.x);
             differentialCoords.y = (viewport->zoom + 1).ApplyTo(differentialCoords.y);
-            if (gConfigGeneral.InvertViewportDrag)
+            if (Config::Get().general.InvertViewportDrag)
             {
                 w->savedViewPos -= differentialCoords;
             }
@@ -588,7 +594,7 @@ static void InputViewportDragContinue()
     }
 
     const CursorState* cursorState = ContextGetCursorState();
-    if (cursorState->touch || gConfigGeneral.InvertViewportDrag)
+    if (cursorState->touch || Config::Get().general.InvertViewportDrag)
     {
         gInputDragLast = newDragCoords;
     }
@@ -625,10 +631,10 @@ static void InputScrollBegin(WindowBase& w, WidgetIndex widgetIndex, const Scree
 
     _currentScrollArea = scroll_area;
     _currentScrollIndex = scroll_id;
-    WindowEventScrollSelectCall(&w, scroll_id, scroll_area);
+    w.OnScrollSelect(scroll_id, scroll_area);
     if (scroll_area == SCROLL_PART_VIEW)
     {
-        WindowEventScrollMousedownCall(&w, scroll_id, scrollCoords);
+        w.OnScrollMouseDown(scroll_id, scrollCoords);
         return;
     }
 
@@ -637,12 +643,12 @@ static void InputScrollBegin(WindowBase& w, WidgetIndex widgetIndex, const Scree
 
     int32_t widget_width = widg.width() - 1;
     if (scroll.flags & VSCROLLBAR_VISIBLE)
-        widget_width -= SCROLLBAR_WIDTH + 1;
+        widget_width -= kScrollBarWidth + 1;
     int32_t widget_content_width = std::max(scroll.h_right - widget_width, 0);
 
     int32_t widget_height = widg.bottom - widg.top - 1;
     if (scroll.flags & HSCROLLBAR_VISIBLE)
-        widget_height -= SCROLLBAR_WIDTH + 1;
+        widget_height -= kScrollBarWidth + 1;
     int32_t widget_content_height = std::max(scroll.v_bottom - widget_height, 0);
 
     switch (scroll_area)
@@ -718,7 +724,7 @@ static void InputScrollContinue(WindowBase& w, WidgetIndex widgetIndex, const Sc
     switch (scroll_part)
     {
         case SCROLL_PART_VIEW:
-            WindowEventScrollMousedragCall(&w, scroll_id, newScreenCoords);
+            w.OnScrollMouseDrag(scroll_id, newScreenCoords);
             break;
         case SCROLL_PART_HSCROLLBAR_LEFT:
             InputScrollPartUpdateHLeft(w, widgetIndex, scroll_id);
@@ -757,7 +763,7 @@ static void InputScrollPartUpdateHThumb(WindowBase& w, WidgetIndex widgetIndex, 
         newLeft *= x;
         x = widget.width() - 21;
         if (scroll.flags & VSCROLLBAR_VISIBLE)
-            x -= SCROLLBAR_WIDTH + 1;
+            x -= kScrollBarWidth + 1;
         newLeft /= x;
         x = newLeft;
         scroll.flags |= HSCROLLBAR_THUMB_PRESSED;
@@ -767,7 +773,7 @@ static void InputScrollPartUpdateHThumb(WindowBase& w, WidgetIndex widgetIndex, 
             newLeft = 0;
         x = widget.width() - 1;
         if (scroll.flags & VSCROLLBAR_VISIBLE)
-            x -= SCROLLBAR_WIDTH + 1;
+            x -= kScrollBarWidth + 1;
         x *= -1;
         x += scroll.h_right;
         if (x < 0)
@@ -796,7 +802,7 @@ static void InputScrollPartUpdateVThumb(WindowBase& w, WidgetIndex widgetIndex, 
         newTop *= y;
         y = widget.height() - 21;
         if (scroll.flags & HSCROLLBAR_VISIBLE)
-            y -= SCROLLBAR_WIDTH + 1;
+            y -= kScrollBarWidth + 1;
         newTop /= y;
         y = newTop;
         scroll.flags |= VSCROLLBAR_THUMB_PRESSED;
@@ -806,7 +812,7 @@ static void InputScrollPartUpdateVThumb(WindowBase& w, WidgetIndex widgetIndex, 
             newTop = 0;
         y = widget.height() - 1;
         if (scroll.flags & HSCROLLBAR_VISIBLE)
-            y -= SCROLLBAR_WIDTH + 1;
+            y -= kScrollBarWidth + 1;
         y *= -1;
         y += scroll.v_bottom;
         if (y < 0)
@@ -850,7 +856,7 @@ static void InputScrollPartUpdateHRight(WindowBase& w, WidgetIndex widgetIndex, 
         scroll.h_left += 3;
         int32_t newLeft = widget.width() - 1;
         if (scroll.flags & VSCROLLBAR_VISIBLE)
-            newLeft -= SCROLLBAR_WIDTH + 1;
+            newLeft -= kScrollBarWidth + 1;
         newLeft *= -1;
         newLeft += scroll.h_right;
         if (newLeft < 0)
@@ -893,7 +899,7 @@ static void InputScrollPartUpdateVBottom(WindowBase& w, WidgetIndex widgetIndex,
         scroll.v_top += 3;
         int32_t newTop = widget.height() - 1;
         if (scroll.flags & HSCROLLBAR_VISIBLE)
-            newTop -= SCROLLBAR_WIDTH + 1;
+            newTop -= kScrollBarWidth + 1;
         newTop *= -1;
         newTop += scroll.v_bottom;
         if (newTop < 0)
@@ -938,7 +944,7 @@ static void InputWidgetOver(const ScreenCoordsXY& screenCoords, WindowBase* w, W
             WindowTooltipClose();
         else
         {
-            WindowEventScrollMouseoverCall(w, scrollId, newScreenCoords);
+            w->OnScrollMouseOver(scrollId, newScreenCoords);
             InputUpdateTooltip(w, widgetIndex, screenCoords);
         }
     }
@@ -985,7 +991,7 @@ static void InputWidgetOverFlatbuttonInvalidate()
     WindowBase* w = WindowFindByNumber(gHoverWidget.window_classification, gHoverWidget.window_number);
     if (w != nullptr)
     {
-        WindowEventOnPrepareDrawCall(w);
+        w->OnPrepareDraw();
         if (w->widgets[gHoverWidget.widget_index].type == WindowWidgetType::FlatBtn)
         {
             WidgetInvalidateByNumber(gHoverWidget.window_classification, gHoverWidget.window_number, gHoverWidget.widget_index);
@@ -1020,8 +1026,8 @@ static void InputWidgetLeft(const ScreenCoordsXY& screenCoords, WindowBase* w, W
     if (widgetIndex == -1)
         return;
 
-    if (windowClass != gCurrentTextBox.window.classification || windowNumber != gCurrentTextBox.window.number
-        || widgetIndex != gCurrentTextBox.widget_index)
+    if (windowClass != GetCurrentTextBox().window.classification || windowNumber != GetCurrentTextBox().window.number
+        || widgetIndex != GetCurrentTextBox().widget_index)
     {
         WindowCancelTextbox();
     }
@@ -1047,7 +1053,7 @@ static void InputWidgetLeft(const ScreenCoordsXY& screenCoords, WindowBase* w, W
                 if (w != nullptr)
                 {
                     InputSetFlag(INPUT_FLAG_4, true);
-                    WindowEventToolDownCall(w, gCurrentToolWidget.widget_index, screenCoords);
+                    w->OnToolDown(gCurrentToolWidget.widget_index, screenCoords);
                 }
             }
             break;
@@ -1061,6 +1067,7 @@ static void InputWidgetLeft(const ScreenCoordsXY& screenCoords, WindowBase* w, W
         case WindowWidgetType::LabelCentred:
         case WindowWidgetType::Label:
         case WindowWidgetType::Groupbox:
+        case WindowWidgetType::ProgressBar:
         case WindowWidgetType::Placeholder:
         case WindowWidgetType::Last:
             // Non-interactive widget type
@@ -1091,7 +1098,7 @@ static void InputWidgetLeft(const ScreenCoordsXY& screenCoords, WindowBase* w, W
                 _clickRepeatTicks = gCurrentRealTimeTicks;
 
                 WidgetInvalidateByNumber(windowClass, windowNumber, widgetIndex);
-                WindowEventMouseDownCall(w, widgetIndex);
+                w->OnMouseDown(widgetIndex);
             }
             break;
     }
@@ -1162,13 +1169,13 @@ void ProcessMouseOver(const ScreenCoordsXY& screenCoords)
                         break;
                     }
                     // Same as default but with scroll_x/y
-                    cursorId = WindowEventCursorCall(window, widgetId, scrollCoords);
+                    cursorId = window->OnCursor(widgetId, scrollCoords, CursorID::Arrow);
                     if (cursorId == CursorID::Undefined)
                         cursorId = CursorID::Arrow;
                     break;
                 }
                 default:
-                    cursorId = WindowEventCursorCall(window, widgetId, screenCoords);
+                    cursorId = window->OnCursor(widgetId, screenCoords, CursorID::Arrow);
                     if (cursorId == CursorID::Undefined)
                         cursorId = CursorID::Arrow;
                     break;
@@ -1193,7 +1200,7 @@ void ProcessMouseTool(const ScreenCoordsXY& screenCoords)
         if (w == nullptr)
             ToolCancel();
         else if (InputGetState() != InputState::ViewportRight)
-            WindowEventToolUpdateCall(w, gCurrentToolWidget.widget_index, screenCoords);
+            w->OnToolUpdate(gCurrentToolWidget.widget_index, screenCoords);
     }
 }
 
@@ -1323,7 +1330,7 @@ void InputStateWidgetPressed(
                 {
                     if (WidgetIsHoldable(*w, widgetIndex))
                     {
-                        WindowEventMouseDownCall(w, widgetIndex);
+                        w->OnMouseDown(widgetIndex);
                     }
 
                     // Subtract initial delay from here on we want the event each third tick.
@@ -1413,7 +1420,7 @@ void InputStateWidgetPressed(
                                 dropdown_index = gDropdownDefaultIndex;
                             }
                         }
-                        WindowEventDropdownCall(cursor_w, cursor_widgetIndex, dropdown_index);
+                        cursor_w->OnDropdown(cursor_widgetIndex, dropdown_index);
                     }
                 }
             }
@@ -1445,7 +1452,7 @@ void InputStateWidgetPressed(
                 break;
 
             WidgetInvalidateByNumber(cursor_w_class, cursor_w_number, widgetIndex);
-            WindowEventMouseUpCall(w, widgetIndex);
+            w->OnMouseUp(widgetIndex);
             return;
 
         default:
@@ -1462,6 +1469,11 @@ void InputStateWidgetPressed(
             WidgetInvalidateByNumber(cursor_w_class, cursor_w_number, cursor_widgetIndex);
         }
         return;
+    }
+    else if (gDropdownIsColour)
+    {
+        // This is ordinarily covered in InputWidgetOver but the dropdown with colours is a special case.
+        InputUpdateTooltip(w, widgetIndex, screenCoords);
     }
 
     gDropdownHighlightedIndex = -1;
@@ -1669,7 +1681,7 @@ void InputScrollViewport(const ScreenCoordsXY& scrollScreenCoords)
     if (viewport == nullptr)
         return;
 
-    const int32_t speed = gConfigGeneral.EdgeScrollingSpeed;
+    const int32_t speed = Config::Get().general.EdgeScrollingSpeed;
 
     int32_t multiplier = viewport->zoom.ApplyTo(speed);
     int32_t dx = scrollScreenCoords.x * multiplier;
@@ -1683,18 +1695,18 @@ void InputScrollViewport(const ScreenCoordsXY& scrollScreenCoords)
         int32_t y = mainWindow->savedViewPos.y + viewport->view_height / 2;
         int32_t y_dy = mainWindow->savedViewPos.y + viewport->view_height / 2 + dy;
 
-        auto mapCoord = ViewportPosToMapPos({ x, y }, 0);
-        auto mapCoord_dy = ViewportPosToMapPos({ x, y_dy }, 0);
+        auto mapCoord = ViewportPosToMapPos({ x, y }, 0, viewport->rotation);
+        auto mapCoord_dy = ViewportPosToMapPos({ x, y_dy }, 0, viewport->rotation);
 
         // Check if we're crossing the boundary
         // Clamp to the map minimum value
         int32_t at_map_edge = 0;
         int32_t at_map_edge_dy = 0;
-        if (mapCoord.x < MAP_MINIMUM_X_Y || mapCoord.y < MAP_MINIMUM_X_Y)
+        if (mapCoord.x < kMapMinimumXY || mapCoord.y < kMapMinimumXY)
         {
             at_map_edge = 1;
         }
-        if (mapCoord_dy.x < MAP_MINIMUM_X_Y || mapCoord_dy.y < MAP_MINIMUM_X_Y)
+        if (mapCoord_dy.x < kMapMinimumXY || mapCoord_dy.y < kMapMinimumXY)
         {
             at_map_edge_dy = 1;
         }

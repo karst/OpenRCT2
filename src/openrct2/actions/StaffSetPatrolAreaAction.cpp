@@ -60,8 +60,8 @@ GameActions::Result StaffSetPatrolAreaAction::QueryExecute(bool executing) const
     auto staff = TryGetEntity<Staff>(_spriteId);
     if (staff == nullptr)
     {
-        LOG_ERROR("Invalid entity ID: %u", _spriteId.ToUnderlying());
-        return GameActions::Result(GameActions::Status::InvalidParameters, STR_NONE, STR_NONE);
+        LOG_ERROR("Staff entity not found for spriteID %u", _spriteId.ToUnderlying());
+        return GameActions::Result(GameActions::Status::InvalidParameters, STR_ERR_INVALID_PARAMETER, STR_ERR_STAFF_NOT_FOUND);
     }
 
     auto validRange = ClampRangeWithinMap(_range);
@@ -71,7 +71,7 @@ GameActions::Result StaffSetPatrolAreaAction::QueryExecute(bool executing) const
         {
             if (!LocationValid({ x, y }))
             {
-                return GameActions::Result(GameActions::Status::NotOwned, STR_SET_PATROL_AREA, STR_LAND_NOT_OWNED_BY_PARK);
+                return GameActions::Result(GameActions::Status::InvalidParameters, STR_SET_PATROL_AREA, STR_OFF_EDGE_OF_MAP);
             }
         }
     }

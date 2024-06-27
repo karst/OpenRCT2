@@ -14,8 +14,6 @@
 #include "Location.hpp"
 #include "Map.h"
 
-#include <vector>
-
 struct TileElement;
 
 enum
@@ -39,12 +37,11 @@ extern CoordsXYZD gParkEntranceGhostPosition;
 
 constexpr int32_t MaxRideEntranceOrExitHeight = 244 * COORDS_Z_STEP;
 
-extern std::vector<CoordsXYZD> gParkEntrances;
-
 extern CoordsXYZD gRideEntranceExitGhostPosition;
 extern StationIndex gRideEntranceExitGhostStationIndex;
 
 void ParkEntranceRemoveGhost();
+int32_t ParkEntranceGetIndex(const CoordsXYZ& entrancePos);
 
 void ParkEntranceReset();
 void MazeEntranceHedgeReplacement(const CoordsXYE& entrance);
