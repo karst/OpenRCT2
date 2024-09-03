@@ -1186,8 +1186,9 @@ enum : ImageIndex
     SPR_G2_TILDE,
 
     SPR_G2_EYE,
+    SPR_G2_DICE,
 
-    SPR_G2_GLYPH_COUNT = (SPR_G2_EYE - SPR_G2_CHAR_BEGIN) + 1,
+    SPR_G2_GLYPH_COUNT = (SPR_G2_DICE - SPR_G2_CHAR_BEGIN) + 1,
     SPR_G2_CHAR_END = SPR_G2_CHAR_BEGIN + SPR_G2_GLYPH_COUNT * 3,
 
     // G2 Track additions

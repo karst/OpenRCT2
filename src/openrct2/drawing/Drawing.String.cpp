@@ -636,6 +636,7 @@ static bool ShouldUseSpriteForCodepoint(char32_t codepoint)
         case UnicodeChar::minus:
         case UnicodeChar::variation_selector:
         case UnicodeChar::eye:
+        case UnicodeChar::dice:
         case UnicodeChar::road:
         case UnicodeChar::railway:
             return true;

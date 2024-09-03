@@ -42,6 +42,7 @@ namespace OpenRCT2::Ui
     constexpr const char* kBlackRightArrowString = u8"{BLACK}▶";
     constexpr const char* kCheckMarkString = u8"✓";
     constexpr const char* kEyeString = u8"👁";
+    constexpr const char* kDiceString = u8"⚄";
 
     enum class WindowColour : uint8_t
     {

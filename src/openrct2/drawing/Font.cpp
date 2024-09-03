@@ -243,6 +243,7 @@ static const std::unordered_map<char32_t, int32_t> codepointOffsetMap = {
     { UnicodeChar::cross, CSChar::cross - CS_SPRITE_FONT_OFFSET },
     { UnicodeChar::water, CSChar::water - CS_SPRITE_FONT_OFFSET },
     { UnicodeChar::eye, SPR_G2_EYE - SPR_CHAR_START },
+    { UnicodeChar::dice, SPR_G2_DICE - SPR_CHAR_START },
     { UnicodeChar::road, CSChar::road - CS_SPRITE_FONT_OFFSET },
     { UnicodeChar::railway, CSChar::railway - CS_SPRITE_FONT_OFFSET },
 

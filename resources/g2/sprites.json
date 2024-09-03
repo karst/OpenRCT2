@@ -1264,6 +1264,12 @@
     },
     {
         "path": "font/eye.png",
+        "y": 1,
+        "palette": "keep",
+        "format": "raw"
+    },
+    {
+        "path": "font/randomize.png",
         "y": 0,
         "palette": "keep",
         "format": "raw"
@@ -1915,6 +1921,12 @@
     },
     {
         "path": "font/eye.png",
+        "y": 0,
+        "palette": "keep",
+        "format": "raw"
+    },
+    {
+        "path": "font/randomize.png",
         "y": 0,
         "palette": "keep",
         "format": "raw"
@@ -2574,6 +2586,12 @@
     },
     {
         "path": "font/eye-tiny.png",
+        "y": 0,
+        "palette": "keep",
+        "format": "raw"
+    },
+    {
+        "path": "font/randomize.png",
         "y": 0,
         "palette": "keep",
         "format": "raw"
