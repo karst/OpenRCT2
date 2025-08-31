@@ -197,6 +197,30 @@ static void LatticeTriangleTrackAltPoweredLift(
     PaintUtilSetGeneralSupportHeight(session, height + 56);
 }
 
+static void LatticeTriangleTrackAltPoweredLiftDown(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement, SupportType supportType)
+{
+    PaintAddImageAsParentRotated(
+        session, direction, session.TrackColours.WithIndex(SPR_TRACKS_LATTICE_TRIANGLE_TRACK_POWERED_LIFT_DOWN_1 + (direction + 2) & 3),
+        { 0, 0, height }, { { 0, 6, height }, { 32, 20, 3 } });
+
+    if (TrackPaintUtilShouldPaintSupports(session.MapPosition))
+    {
+        MetalASupportsPaintSetup(session, supportType.metal, MetalSupportPlace::centre, 8, height, session.SupportColours);
+    }
+    if (direction == 0 || direction == 3)
+    {
+        PaintUtilPushTunnelRotated(session, direction, height - 8, kTunnelGroup, TunnelSubType::SlopeStart);
+    }
+    else
+    {
+        PaintUtilPushTunnelRotated(session, direction, height + 8, kTunnelGroup, TunnelSubType::SlopeEnd);
+    }
+    PaintUtilSetSegmentSupportHeight(session, PaintUtilRotateSegments(BlockedSegments::kStraightFlat, direction), 0xFFFF, 0);
+    PaintUtilSetGeneralSupportHeight(session, height + 56);
+}
+
 static void LatticeTriangleTrackAltDiagBooster(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
@@ -277,6 +301,10 @@ TrackPaintFunction GetTrackPaintFunctionLatticeTriangleTrackAlt(TrackElemType tr
             return LatticeTriangleTrackAltDiagBlockBrake;
         case TrackElemType::DiagBrakes:
             return LatticeTriangleTrackAltDiagBrake;
+        case TrackElemType::Up25Booster:
+            return LatticeTriangleTrackAltPoweredLift;
+        case TrackElemType::Down25Booster:
+            return LatticeTriangleTrackAltPoweredLiftDown;
 
         default:
             return GetTrackPaintFunctionLatticeTriangleTrack(trackType);

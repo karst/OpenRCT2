@@ -43,6 +43,8 @@ namespace OpenRCT2
         // Boosters
         TrackElemType::Booster,
         TrackElemType::DiagBooster,
+        TrackElemType::Up25Booster,
+        TrackElemType::Down25Booster,
 
         // Photo sections
         TrackElemType::OnRidePhoto,

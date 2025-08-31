@@ -10120,6 +10120,14 @@ static void LatticeTriangleTrackPoweredLift(
     PaintUtilSetGeneralSupportHeight(session, height + 56);
 }
 
+static void LatticeTriangleTrackPoweredLiftDown(
+    PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
+    const TrackElement& trackElement, SupportType supportType)
+{
+    LatticeTriangleTrackPoweredLift(session, ride, trackSequence, (direction + 2) & 3, height, trackElement, supportType);
+}
+
+
 static void LatticeTriangleTrack90DegUp(
     PaintSession& session, const Ride& ride, uint8_t trackSequence, uint8_t direction, int32_t height,
     const TrackElement& trackElement, SupportType supportType)
@@ -20066,6 +20074,10 @@ TrackPaintFunction GetTrackPaintFunctionLatticeTriangleTrack(OpenRCT2::TrackElem
             return LatticeTriangleTrackDiagBrakes;
         case TrackElemType::DiagBooster:
             return LatticeTriangleTrackDiagBooster;
+        case TrackElemType::Up25Booster:
+            return LatticeTriangleTrackPoweredLift;
+        case TrackElemType::Down25Booster:
+            return LatticeTriangleTrackPoweredLiftDown;
         default:
             return TrackPaintFunctionDummy;
     }

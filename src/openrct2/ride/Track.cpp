@@ -655,6 +655,8 @@ bool TrackTypeIsBooster(OpenRCT2::TrackElemType trackType)
     {
         case TrackElemType::Booster:
         case TrackElemType::DiagBooster:
+        case TrackElemType::Up25Booster:
+        case TrackElemType::Down25Booster:
             return true;
         default:
             return false;

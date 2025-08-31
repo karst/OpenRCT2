@@ -157,6 +157,9 @@ enum class TrackGroup : uint8_t
     diagSlopeSteepUp,
     diagSlopeSteepDown,
 
+    inclinedBoosterUp,
+    inclinedBoosterDown,
+
     count,
 };
 
@@ -623,7 +626,10 @@ namespace OpenRCT2
 
         DiagDown25Brakes = 349,
 
-        Count = 350,
+        Up25Booster = 350,
+        Down25Booster = 351,
+
+        Count = 352,
 
         None = 65535,
     };
