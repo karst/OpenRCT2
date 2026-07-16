@@ -225,6 +225,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_MUSIC_DROPDOWN,
         WIDX_MUSIC_IMAGE,
         WIDX_MUSIC_DATA,
+        WIDX_MUSIC_OBJECT_SELECTOR,
 
         WIDX_SAVE_TRACK_DESIGN = 14,
         WIDX_SELECT_NEARBY_SCENERY,
@@ -391,7 +392,8 @@ namespace OpenRCT2::Ui::Windows
         makeWidget({  7, 62}, {302,  14}, WidgetType::dropdownMenu, WindowColour::secondary, kStringIdEmpty                                ),
         makeWidget({297, 63}, { 11,  12}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_SELECT_MUSIC_STYLE_TIP),
         makeWidget({154, 90}, {114, 114}, WidgetType::flatBtn,      WindowColour::secondary                                                ),
-        makeWidget({  7, 90}, {500, 450}, WidgetType::scroll,       WindowColour::secondary, SCROLL_BOTH                                   )
+        makeWidget({  7, 90}, {500, 450}, WidgetType::scroll,       WindowColour::secondary, SCROLL_BOTH                                   ),
+        makeWidget({169, 47}, {140,  14}, WidgetType::button,       WindowColour::secondary, STR_OBJ_SELECT_MUSIC, STR_OBJ_SELECT_MUSIC_TIP)
     );
 
     // 0x009AE5DC
@@ -5306,6 +5308,9 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_PLAY_MUSIC:
                     ToggleMusic();
+                    break;
+                case WIDX_MUSIC_OBJECT_SELECTOR:
+                    EditorObjectSelectionOpen(true);
                     break;
             }
         }

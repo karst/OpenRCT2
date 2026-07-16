@@ -81,7 +81,7 @@ namespace OpenRCT2::Ui::Windows
     WindowBase* EditorBottomToolbarOpen();
 
     // EditorObjectSelection
-    WindowBase* EditorObjectSelectionOpen();
+    WindowBase* EditorObjectSelectionOpen(bool musicOnlyMode = false);
     bool EditorObjectSelectionWindowCheck();
     void EditorObjectSelectionClose();
 

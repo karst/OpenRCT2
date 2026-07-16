@@ -273,6 +273,7 @@ namespace OpenRCT2::Ui::Windows
         bool _overrideChecks = false;
         u8string _windowTitle{};
         u8string _filterDropdownText{};
+        bool _musicOnlyMode = false;
 
     public:
         /**
@@ -940,6 +941,22 @@ namespace OpenRCT2::Ui::Windows
                     widgets[WIDX_TAB_1 + i].type = WidgetType::empty;
                 }
             }
+            else if (_musicOnlyMode)
+            {
+                for (size_t i = 0; i < std::size(ObjectSelectionPages); i++)
+                {
+                    if (ObjectSelectionPages[i].mainObjectType != ObjectType::music)
+                    {
+                        widgets[WIDX_TAB_1 + i].type = WidgetType::empty;
+                    }
+                    else
+                    {
+                        auto& musicTabWidget = widgets[WIDX_TAB_1 + i];
+                        musicTabWidget.left = 3;
+                        musicTabWidget.right = 33;
+                    }
+                }
+            }
 
             // Do we have any sub-tabs?
             const bool hasSubTabs = !currentPage.subTabs.empty();
@@ -1133,6 +1150,13 @@ namespace OpenRCT2::Ui::Windows
                     return;
                 }
             }
+        }
+
+        void SetMusicOnlyMode()
+        {
+            _musicOnlyMode = true;
+            GoToTab(ObjectType::music);
+            invalidate();
         }
 
     private:
@@ -1630,12 +1654,19 @@ namespace OpenRCT2::Ui::Windows
      *
      * rct2: 0x006AA64E
      */
-    WindowBase* EditorObjectSelectionOpen()
+    WindowBase* EditorObjectSelectionOpen(bool musicOnlyMode)
     {
         auto* windowMgr = GetWindowManager();
-        return windowMgr->FocusOrCreate<EditorObjectSelectionWindow>(
+        auto* window = windowMgr->FocusOrCreate<EditorObjectSelectionWindow>(
             WindowClass::editorObjectSelection, kWindowSize,
             { WindowFlag::higherContrastOnPress, WindowFlag::resizable, WindowFlag::centreScreen });
+
+        if (musicOnlyMode && window != nullptr)
+        {
+            static_cast<EditorObjectSelectionWindow*>(window)->SetMusicOnlyMode();
+        }
+
+        return window;
     }
 
     // Used for forced closure
